@@ -45,6 +45,17 @@
     </message>
 </context>
 <context>
+    <name>CameraPage</name>
+    <message>
+        <source>Fill the frame with the page, and hold the phone parallel to it.</source>
+        <translation>Remplissez le cadre avec la page, et tenez le téléphone parallèle à celle-ci.</translation>
+    </message>
+    <message>
+        <source>The photo could not be taken.</source>
+        <translation>La photo n'a pas pu être prise.</translation>
+    </message>
+</context>
+<context>
     <name>MainPage</name>
     <message>
         <source>About</source>
@@ -55,6 +66,10 @@
         <translation>Choisir une photo</translation>
     </message>
     <message>
+        <source>Everything happens on this device. Moji has no network permission at all.</source>
+        <translation>Tout se passe sur cet appareil. Moji n'a aucune permission réseau.</translation>
+    </message>
+    <message>
         <source>From the gallery</source>
         <translation>Depuis la galerie</translation>
     </message>
@@ -63,20 +78,82 @@
         <translation>Moji OCR</translation>
     </message>
     <message>
+        <source>Point the camera at a page</source>
+        <translation>Visez une page avec l'appareil photo</translation>
+    </message>
+    <message>
         <source>Read</source>
         <translation>Lire</translation>
     </message>
     <message>
-        <source>Recognition is not wired up yet</source>
-        <translation>La reconnaissance n'est pas encore branchée</translation>
+        <source>Settings</source>
+        <translation>Paramètres</translation>
     </message>
     <message>
-        <source>Selected</source>
+        <source>Take a photo</source>
+        <translation>Prendre une photo</translation>
+    </message>
+</context>
+<context>
+    <name>OcrEngine</name>
+    <message>
+        <source>Nothing could be read from that image.</source>
+        <translation>Rien n'a pu être lu sur cette image.</translation>
+    </message>
+    <message>
+        <source>That file is not an image this device can read.</source>
+        <translation>Ce fichier n'est pas une image que cet appareil sait lire.</translation>
+    </message>
+    <message>
+        <source>That image is not there any more.</source>
+        <translation>Cette image n'existe plus.</translation>
+    </message>
+    <message>
+        <source>The image could not be prepared for reading.</source>
+        <translation>L'image n'a pas pu être préparée pour la lecture.</translation>
+    </message>
+    <message>
+        <source>The language data could not be loaded.</source>
+        <translation>Les données de langue n'ont pas pu être chargées.</translation>
+    </message>
+</context>
+<context>
+    <name>ResultPage</name>
+    <message>
+        <source>%1 words</source>
+        <translation>%1 mots</translation>
+    </message>
+    <message>
+        <source>All text</source>
+        <translation>Tout le texte</translation>
+    </message>
+    <message>
+        <source>Copy all text</source>
+        <translation>Copier tout le texte</translation>
+    </message>
+    <message>
+        <source>Read again</source>
+        <translation>Relire</translation>
+    </message>
+    <message>
+        <source>Reading…</source>
+        <translation>Lecture…</translation>
+    </message>
+    <message>
+        <source>Selection</source>
         <translation>Sélection</translation>
     </message>
     <message>
-        <source>Settings</source>
-        <translation>Paramètres</translation>
+        <source>Tap a word in the photo. Tap it again to take the whole line, then the paragraph.</source>
+        <translation>Touchez un mot sur la photo. Touchez-le à nouveau pour prendre toute la ligne, puis le paragraphe.</translation>
+    </message>
+    <message>
+        <source>Tap the photo again to widen, or tap here to copy</source>
+        <translation>Touchez à nouveau la photo pour élargir, ou touchez ici pour copier</translation>
+    </message>
+    <message>
+        <source>Text</source>
+        <translation>Texte</translation>
     </message>
 </context>
 <context>

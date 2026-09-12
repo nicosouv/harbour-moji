@@ -12,12 +12,29 @@ find_package(Qt5 REQUIRED COMPONENTS Core Gui Qml Quick Concurrent Sql)
 # just an untranslated one
 find_package(Qt5LinguistTools QUIET)
 
-# Native dependencies are cross-compiled into 3rdparty/ by the scripts in
+# Tesseract and Leptonica are cross-compiled into 3rdparty/ by the scripts in
 # scripts/, inside the Sailfish SDK container, and cached by CI on each script's
-# hash. Nothing links them yet - they arrive with src/ocrengine.cpp - but
-# scripts/download_models_for_build.sh already fetches the language data, because
-# the size it adds to the RPM is worth discovering now rather than at v0.9.
+# hash. On a host that happens to package them - which is how the syntax-check
+# lane works - pkg-config is used instead, so the code can be compile-checked
+# without the SDK.
 set(THIRDPARTY_DIR ${CMAKE_SOURCE_DIR}/3rdparty)
+
+find_package(PkgConfig REQUIRED)
+
+if(EXISTS ${THIRDPARTY_DIR}/tesseract)
+    message(STATUS "Tesseract: bundled in 3rdparty/")
+    set(TESSERACT_INCLUDE_DIRS
+        ${THIRDPARTY_DIR}/tesseract/include
+        ${THIRDPARTY_DIR}/leptonica/include)
+    find_library(TESSERACT_LIB tesseract
+        PATHS ${THIRDPARTY_DIR}/tesseract/lib NO_DEFAULT_PATH)
+    find_library(LEPTONICA_LIB lept
+        PATHS ${THIRDPARTY_DIR}/leptonica/lib NO_DEFAULT_PATH)
+    set(TESSERACT_LIBRARIES ${TESSERACT_LIB} ${LEPTONICA_LIB})
+else()
+    message(STATUS "Tesseract: from pkg-config")
+    pkg_check_modules(TESSERACT REQUIRED tesseract lept)
+endif()
 
 # The pure layers: no Tesseract, no OpenCV, no Qt Quick. Everything that makes a
 # decision lives here so tests/ can reach it with plain Qt5, which is the only
@@ -26,24 +43,28 @@ set(CORE_SOURCES
     src/ocrresult.cpp
     src/textlayout.cpp
     src/fieldparser.cpp
+    src/imageprep.cpp
 )
 
 set(CORE_HEADERS
     src/ocrresult.h
     src/textlayout.h
     src/fieldparser.h
+    src/imageprep.h
 )
 
 set(SOURCES
     src/main.cpp
     src/logging.cpp
     src/settings.cpp
+    src/ocrengine.cpp
     ${CORE_SOURCES}
 )
 
 set(HEADERS
     src/logging.h
     src/settings.h
+    src/ocrengine.h
     ${CORE_HEADERS}
 )
 
@@ -54,6 +75,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE APP_VERSION="${PROJECT_VERSIO
 
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/src
+    ${TESSERACT_INCLUDE_DIRS}
 )
 
 target_link_libraries(${PROJECT_NAME}
@@ -63,6 +85,7 @@ target_link_libraries(${PROJECT_NAME}
     Qt5::Quick
     Qt5::Concurrent
     Qt5::Sql
+    ${TESSERACT_LIBRARIES}
 )
 
 install(TARGETS ${PROJECT_NAME}
@@ -84,6 +107,20 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/tessdata
     DESTINATION share/${PROJECT_NAME}
     FILES_MATCHING PATTERN "*.traineddata"
 )
+
+if(EXISTS ${THIRDPARTY_DIR}/tesseract)
+    file(GLOB BUNDLED_LIBS
+        ${THIRDPARTY_DIR}/tesseract/lib/libtesseract.so*
+        ${THIRDPARTY_DIR}/leptonica/lib/liblept.so*)
+    install(FILES ${BUNDLED_LIBS}
+        DESTINATION lib/${PROJECT_NAME}
+    )
+    # So the loader finds them without a wrapper script setting LD_LIBRARY_PATH.
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        INSTALL_RPATH "$ORIGIN/../lib/${PROJECT_NAME}"
+        BUILD_WITH_INSTALL_RPATH TRUE
+    )
+endif()
 
 if(Qt5LinguistTools_FOUND)
     file(GLOB TS_FILES ${CMAKE_SOURCE_DIR}/translations/*.ts)

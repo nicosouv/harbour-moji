@@ -22,6 +22,7 @@ URL:        https://github.com/nicosouv/harbour-moji
 Source0:    %{name}-%{version}.tar.bz2
 Source100:  harbour-moji.yaml
 Requires:   sailfishsilica-qt5 >= 0.10.9
+Requires:   qt5-qtdeclarative-import-multimedia
 BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5Gui)
 BuildRequires:  pkgconfig(Qt5Qml)
@@ -87,5 +88,6 @@ desktop-file-install --delete-original       \
 %{_datadir}/%{name}
 %{_datadir}/applications/%{name}.desktop
 %{_datadir}/icons/hicolor/*/apps/%{name}.png
+%{_libdir}/%{name}/*.so*
 # >> files
 # << files

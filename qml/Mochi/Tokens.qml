@@ -82,14 +82,26 @@ QtObject {
     // so this is deliberately far below controlHeight / 2.
     readonly property real controlRadius: 4 * Theme.pixelRatio
 
-    // The webOS switch colours, kept literal in every theme. Everything else
-    // here follows the ambience or the palette, but this green is the single most
-    // recognisable value in the whole vocabulary - deriving it from the user's
-    // ambience would throw away the only detail an ex-Pre owner is certain to
-    // know.
-    readonly property color onColor: "#8BBA3D"
-    readonly property color offColor: "#B1B1B1"
-    readonly property color knobColor: "#F6F6F6"
+    // The webOS switch colours.
+    //
+    // #8BBA3D is the single most recognisable value in the whole vocabulary, so
+    // the Mochi themes keep it literal. Ambience mode does not: someone who left
+    // the theme on "ambience" is asking for an app that looks like their phone,
+    // and a fixed green switch against a chosen ambience is the one element that
+    // would refuse to. Choosing that theme is the choice.
+    readonly property color onColor: ambient ? Theme.highlightBackgroundColor
+                                             : "#8BBA3D"
+    readonly property color offColor: ambient
+            ? Theme.rgba(Theme.primaryColor, 0.25)
+            : "#B1B1B1"
+    readonly property color knobColor: ambient ? Theme.primaryColor : "#F6F6F6"
+
+    // Silica's controls are pills; webOS's were rounded rectangles, and keeping
+    // them square-ish is most of what makes them recognisable. In ambience mode
+    // that distinction is one more thing that would look foreign, so the corners
+    // round all the way there too.
+    readonly property real switchRadius: ambient ? controlHeight / 2
+                                                 : controlRadius
 
     // The track a Segmented control sits in.
     readonly property color trackColor: ambient

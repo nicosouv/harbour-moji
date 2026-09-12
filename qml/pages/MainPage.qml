@@ -3,7 +3,7 @@ import Sailfish.Silica 1.0
 import Sailfish.Pickers 1.0
 import Mochi 1.0
 
-// Two ways in: the camera, or a photo already on the device.
+// Two ways in: photograph a page, or pick one already on the device.
 //
 // Mojo put the action in the list as a row rather than behind a floating button,
 // and the pulley carries what is global - settings, about. That split is the rule
@@ -11,9 +11,12 @@ import Mochi 1.0
 Page {
     id: page
 
-    property string imagePath: ""
-
     allowedOrientations: defaultAllowedOrientations
+
+    function read(path) {
+        pageStack.push(Qt.resolvedUrl("ResultPage.qml"),
+                       { imageUrl: "file://" + path })
+    }
 
     Rectangle {
         anchors.fill: parent
@@ -54,6 +57,24 @@ Page {
 
                 PanelRow {
                     width: parent.width
+                    title: qsTr("Take a photo")
+                    detail: qsTr("Point the camera at a page")
+                    accent: true
+                    glyph: "●"
+                    onClicked: {
+                        var camera = pageStack.push(Qt.resolvedUrl("CameraPage.qml"))
+                        camera.captured.connect(function (path) {
+                            // Replace rather than push: coming back from the
+                            // result should return here, not to a viewfinder that
+                            // would restart the camera behind the page.
+                            pageStack.replace(Qt.resolvedUrl("ResultPage.qml"),
+                                              { imageUrl: "file://" + path })
+                        })
+                    }
+                }
+
+                PanelRow {
+                    width: parent.width
                     title: qsTr("Choose a photo")
                     detail: qsTr("From the gallery")
                     accent: true
@@ -62,34 +83,13 @@ Page {
                 }
             }
 
-            GroupPanel {
-                width: parent.width
-                title: qsTr("Selected")
-                visible: page.imagePath !== ""
-
-                PanelRow {
-                    width: parent.width
-                    // The file name only: a full path is unreadable at this size
-                    // and the directory is not what the user is checking.
-                    title: page.imagePath.substring(page.imagePath.lastIndexOf("/") + 1)
-                    detail: qsTr("Recognition is not wired up yet")
-                    glyph: "…"
-                }
-            }
-
-            Image {
+            Label {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
-                fillMode: Image.PreserveAspectFit
-                asynchronous: true
-                visible: page.imagePath !== ""
-                source: page.imagePath === "" ? "" : "file://" + page.imagePath
-
-                // Decoded at the size it is drawn rather than at the camera's
-                // resolution: a 12-megapixel photo held at full size is ~48MB of
-                // pixels, which is how an image viewer gets itself killed on a
-                // phone.
-                sourceSize.width: page.width
+                wrapMode: Text.Wrap
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: Tokens.secondaryColor
+                text: qsTr("Everything happens on this device. Moji has no network permission at all.")
             }
         }
     }
@@ -99,7 +99,14 @@ Page {
 
         ImagePickerPage {
             onSelectedContentPropertiesChanged: {
-                page.imagePath = selectedContentProperties.filePath
+                if (selectedContentProperties.filePath) {
+                    // The picker is still on the stack at this point; replacing it
+                    // means Back from the result returns to the main page rather
+                    // than to the gallery.
+                    pageStack.replace(Qt.resolvedUrl("ResultPage.qml"),
+                                      { imageUrl: "file://"
+                                                  + selectedContentProperties.filePath })
+                }
             }
         }
     }

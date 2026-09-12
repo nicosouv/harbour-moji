@@ -11,6 +11,15 @@ Name=Moji OCR
 # a README and becomes something the OS enforces whether the code deserves the
 # trust or not. If a future feature seems to need the network, that is the line
 # to argue about first.
-Permissions=Camera;Pictures;Downloads;Sharing
+#
+# MediaIndexing is not optional here, and its absence is not obvious: Pictures
+# only whitelists ~/Pictures on the filesystem, while the gallery picker lists
+# images by asking the tracker index over D-Bus. Without MediaIndexing the picker
+# opens onto an empty page - no error, no warning, just nothing - because it is
+# allowed to read the directory and not allowed to ask what is in it. The
+# permission's own description is "List files stored on device".
+#
+# RemovableMedia is there for the same reason on an SD card.
+Permissions=Camera;Pictures;RemovableMedia;MediaIndexing;Downloads;Sharing
 OrganizationName=harbour-moji
 ApplicationName=harbour-moji

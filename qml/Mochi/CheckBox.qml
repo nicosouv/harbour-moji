@@ -36,7 +36,7 @@ Item {
         width: root.boxSize
         height: root.boxSize
         anchors.centerIn: parent
-        radius: Tokens.controlRadius
+        radius: Tokens.switchRadius
 
         color: root.checked ? root.boxColor : "transparent"
         border.width: root.checked ? 0 : Tokens.hairline

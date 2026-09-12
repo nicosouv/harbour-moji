@@ -78,8 +78,9 @@ would be a great deal of work for no one's benefit.
 ### Architecture
 
 - **C++ native**, **CMake**
-- **Tesseract** (LSTM) with **Leptonica**, and **OpenCV minimal** for
-  preprocessing, cross-compiled and bundled into the RPM
+- **Tesseract 4.1.3** (LSTM only) with **Leptonica 1.82**, cross-compiled and
+  bundled into the RPM. Leptonica is built without any image codec: Qt has already
+  decoded the photo, and `OcrEngine` hands Tesseract the raw `QImage` bits.
 - Built for `aarch64` and `armv7hl`
 
 Tesseract was chosen over a detector/recogniser model pair for one reason: its
@@ -116,6 +117,13 @@ docker run --rm -v "$PWD:/src:ro" -w /work ubuntu:24.04 bash -c '
   QT_QPA_PLATFORM=offscreen ctest --test-dir build-tests --output-on-failure'
 ```
 
+### Native dependencies
+
+`scripts/build_leptonica.sh` and `scripts/build_tesseract.sh` cross-compile them
+inside the SDK container, under `sb2`. CI caches the result per architecture on
+the hash of those two scripts, so editing one forces a rebuild and nothing else
+does. Both tarballs are checksum-pinned, the same as the language data.
+
 ### Language data
 
 `scripts/download_models_for_build.sh` fetches the 30 base languages from a
@@ -126,7 +134,7 @@ worse than no check at all: it looks like one.
 
 ### Tests
 
-The layers that decide anything — `ocrresult`, `textlayout`, `fieldparser` — hold
-no Tesseract and no Qt Quick, so `tests/` reaches them with plain Qt5 on any
-machine. That is deliberate: the RPM is only ever built in CI, on a tag, so this
+The layers that decide anything — `ocrresult`, `textlayout`, `fieldparser`,
+`imageprep` — hold no Tesseract and no Qt Quick, so `tests/` reaches them with
+plain Qt5 on any machine. That is deliberate: the RPM is only ever built in CI, on a tag, so this
 is the only feedback available before a version number is spent.

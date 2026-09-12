@@ -14,6 +14,15 @@ set -u
 
 CFLAGS=$(pkg-config --cflags Qt5Core Qt5Gui Qt5Qml Qt5Quick Qt5Concurrent Qt5Sql)
 
+# ocrengine.cpp includes Tesseract's headers. The host package is used purely to
+# have something to include - the version differs from the cross-compiled one, so
+# this proves the call signatures are plausible, not that the ABI matches.
+if pkg-config --exists tesseract; then
+    CFLAGS="$CFLAGS $(pkg-config --cflags tesseract lept)"
+else
+    echo "warning: no host tesseract; ocrengine.cpp will not be checked" >&2
+fi
+
 status=0
 checked=0
 

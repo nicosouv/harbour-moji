@@ -43,6 +43,30 @@ jobs:
           grep -H '^Version' rpm/harbour-moji.yaml rpm/harbour-moji.spec
           grep -H 'project(' CMakeLists.txt
 
+      # Cross-compiled once per architecture and cached on the hash of the
+      # scripts that build them, so editing a build script forces a rebuild and
+      # nothing else does. A cold build is around ten minutes; a warm one is a
+      # download.
+      - name: Cache Tesseract and Leptonica
+        id: cache-ocr
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: 3rdparty
+          key: ocr-${{ matrix.arch }}-${{ hashFiles('scripts/build_leptonica.sh', 'scripts/build_tesseract.sh') }}
+
+      - name: Build Leptonica and Tesseract
+        if: steps.cache-ocr.outputs.cache-hit != 'true'
+        run: |
+          docker run --rm \
+            -v $(pwd):/home/mersdk/src:z \
+            coderus/sailfishos-platform-sdk:${{ env.SAILFISH_RELEASE }} \
+            bash -c "cd /home/mersdk/src && \
+                     sb2 -t SailfishOS-${{ env.SAILFISH_RELEASE }}-${{ matrix.arch }} bash scripts/build_leptonica.sh && \
+                     sb2 -t SailfishOS-${{ env.SAILFISH_RELEASE }}-${{ matrix.arch }} bash scripts/build_tesseract.sh"
+
+      - name: Show the native libraries
+        run: ls -lh 3rdparty/leptonica/lib 3rdparty/tesseract/lib
+
       # Fetches the 30 base languages, each verified against a pinned SHA256.
       # They are never committed - the repo carries no binaries - but the RPM
       # must contain every one of them, because the app has no network

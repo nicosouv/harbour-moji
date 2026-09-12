@@ -42,3 +42,14 @@ add_executable(tst_textlayout
 target_include_directories(tst_textlayout PRIVATE ${MOJI_SRC})
 target_link_libraries(tst_textlayout Qt5::Core Qt5::Gui Qt5::Test)
 add_test(NAME textlayout COMMAND tst_textlayout)
+
+# Preparing a photo for recognition, and - the part that matters - mapping boxes
+# back from the scaled image to the original. An overlay drawn from unmapped
+# boxes lands nearly right, which reads as a rendering quirk rather than a bug.
+add_executable(tst_imageprep
+    ${CMAKE_CURRENT_LIST_DIR}/tst_imageprep.cpp
+    ${MOJI_SRC}/imageprep.cpp
+)
+target_include_directories(tst_imageprep PRIVATE ${MOJI_SRC})
+target_link_libraries(tst_imageprep Qt5::Core Qt5::Gui Qt5::Test)
+add_test(NAME imageprep COMMAND tst_imageprep)

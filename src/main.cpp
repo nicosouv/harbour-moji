@@ -11,6 +11,7 @@
 #include <QTranslator>
 
 #include "logging.h"
+#include "ocrengine.h"
 #include "settings.h"
 
 int main(int argc, char *argv[])
@@ -24,6 +25,7 @@ int main(int argc, char *argv[])
 
     const QString tessdataPath = appDir + QStringLiteral("/tessdata");
     Settings *settings = new Settings(tessdataPath, app.data());
+    OcrEngine *engine = new OcrEngine(tessdataPath, app.data());
 
     // Language: the system locale. Unlike the OCR languages, this is the
     // interface, and Sailfish users expect it to follow the system.
@@ -51,6 +53,7 @@ int main(int argc, char *argv[])
     view->engine()->addImportPath(appDir + QStringLiteral("/qml"));
 
     view->rootContext()->setContextProperty(QStringLiteral("settings"), settings);
+    view->rootContext()->setContextProperty(QStringLiteral("ocr"), engine);
     view->rootContext()->setContextProperty(QStringLiteral("tessdataPath"), tessdataPath);
 #ifdef APP_VERSION
     view->rootContext()->setContextProperty(QStringLiteral("appVersion"),

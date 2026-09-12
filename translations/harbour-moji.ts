@@ -45,6 +45,17 @@
     </message>
 </context>
 <context>
+    <name>CameraPage</name>
+    <message>
+        <source>Fill the frame with the page, and hold the phone parallel to it.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The photo could not be taken.</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>MainPage</name>
     <message>
         <source>About</source>
@@ -52,6 +63,10 @@
     </message>
     <message>
         <source>Choose a photo</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Everything happens on this device. Moji has no network permission at all.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -63,19 +78,81 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>Point the camera at a page</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Read</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Recognition is not wired up yet</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Selected</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Take a photo</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>OcrEngine</name>
+    <message>
+        <source>Nothing could be read from that image.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>That file is not an image this device can read.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>That image is not there any more.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The image could not be prepared for reading.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The language data could not be loaded.</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ResultPage</name>
+    <message>
+        <source>%1 words</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>All text</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Copy all text</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Read again</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Reading…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Selection</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Tap a word in the photo. Tap it again to take the whole line, then the paragraph.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Tap the photo again to widen, or tap here to copy</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Text</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

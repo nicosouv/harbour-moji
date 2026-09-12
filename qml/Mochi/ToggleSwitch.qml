@@ -38,7 +38,7 @@ Item {
         id: track
 
         anchors.fill: parent
-        radius: Tokens.controlRadius
+        radius: Tokens.switchRadius
         color: root.checked ? Tokens.onColor : Tokens.offColor
 
         Behavior on color {
@@ -56,7 +56,7 @@ Item {
                 leftMargin: Theme.paddingMedium
                 verticalCenter: parent.verticalCenter
             }
-            visible: root.checked
+            visible: root.checked && !Tokens.ambient
             text: root.onText
             font.pixelSize: Theme.fontSizeExtraSmall
             font.bold: true
@@ -70,7 +70,7 @@ Item {
                 rightMargin: Theme.paddingMedium
                 verticalCenter: parent.verticalCenter
             }
-            visible: !root.checked
+            visible: !root.checked && !Tokens.ambient
             text: root.offText
             font.pixelSize: Theme.fontSizeExtraSmall
             font.bold: true
@@ -84,7 +84,7 @@ Item {
             y: Tokens.controlMargin
             width: root.knobSize
             height: root.knobSize
-            radius: Tokens.controlRadius
+            radius: Tokens.switchRadius
             color: Tokens.knobColor
 
             x: root.checked ? parent.width - width - Tokens.controlMargin

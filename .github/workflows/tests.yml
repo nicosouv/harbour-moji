@@ -60,7 +60,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            qtbase5-dev qtdeclarative5-dev g++ pkg-config
+            qtbase5-dev qtdeclarative5-dev g++ pkg-config \
+            libtesseract-dev libleptonica-dev
 
       - name: Compile-check src/
         run: bash tests/syntax-check.sh

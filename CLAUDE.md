@@ -14,7 +14,7 @@ that from the icon.
 run on an ARM Mac, so the RPM only ever comes out of GitHub Actions, on a tag.
 
 - Logic goes in layers that plain Qt5 can test: `ocrresult`, `textlayout`,
-  `fieldparser`, `pdfexport`. Anything decided there is covered by `tests/`.
+  `fieldparser`, `imageprep`. Anything decided there is covered by `tests/`.
 - `ocrengine` is the only file that talks to Tesseract, and it is a thin
   translation layer — no decisions in it. The models and the UI are covered by
   `tests/syntax-check.sh` and `scripts/check_qml.py` only.
@@ -26,8 +26,11 @@ slogan — as a build rule:
 
 - The app must not contain a single outbound request. There is no telemetry, no
   model download at first run, no "fetching language data".
-- Native dependencies (Leptonica, Tesseract, OpenCV) are cross-compiled into
-  `3rdparty/` inside the SDK container and cached on the build script's hash.
+- Native dependencies (Leptonica, Tesseract) are cross-compiled into `3rdparty/`
+  inside the SDK container and cached on the build scripts' hash. There is no
+  OpenCV: image preparation turned out to be scaling and a colour conversion,
+  which `imageprep` does with `QImage` alone - and being free of OpenCV is what
+  lets `tests/` reach it.
 - Language data is downloaded **at build time**, verified against a pinned
   SHA256, and bundled. It is never committed — the repo carries no binaries — but
   the installed app has every byte it needs.
@@ -75,6 +78,12 @@ slogan — as a build rule:
 - `TessBaseAPI` is not thread-safe and initialisation is slow. One instance,
   owned by the engine, driven from a worker thread via `QtConcurrent`; never one
   per request.
+- **The gallery picker needs `MediaIndexing`, not just `Pictures`.** `Pictures`
+  whitelists `~/Pictures` on the filesystem; the picker lists images by asking the
+  tracker index over D-Bus, which is a different thing and a different permission.
+  Without it `ImagePickerPage` opens onto an empty page with no error at all — it
+  is allowed to read the directory and not allowed to ask what is in it. Cost a
+  release to find.
 
 - The icon is extracted from a design mockup by `scripts/make_icons.py --extract`,
   not cropped by hand. The badge is semi-transparent over a photographed desk

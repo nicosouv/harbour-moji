@@ -50,6 +50,8 @@ PkgBR:
 # harbour-nami relies on the same way.
 Requires:
   - sailfishsilica-qt5 >= 0.10.9
+  # CameraPage.qml imports QtMultimedia for the viewfinder and the shutter.
+  - qt5-qtdeclarative-import-multimedia
 
 # All installed files
 #
@@ -60,6 +62,10 @@ Files:
   - '%{_datadir}/%{name}'
   - '%{_datadir}/applications/%{name}.desktop'
   - '%{_datadir}/icons/hicolor/*/apps/%{name}.png'
+  # Tesseract and Leptonica travel with the binary rather than being installed
+  # system-wide: Sailfish packages neither, and an app has no business putting
+  # them in the shared library path.
+  - '%{_libdir}/%{name}/*.so*'
 
 # Additional files
 SetupOptions: -q
