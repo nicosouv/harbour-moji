@@ -47,6 +47,13 @@ jobs:
       # scripts that build them, so editing a build script forces a rebuild and
       # nothing else does. A cold build is around ten minutes; a warm one is a
       # download.
+      - name: Prepare build directories
+        # Must come before anything that runs inside the SDK container: it
+        # builds as the mersdk user, and the checkout is owned by the runner.
+        run: |
+          # The SDK container builds as a non-root user
+          chmod -R 777 .
+
       - name: Cache Tesseract and Leptonica
         id: cache-ocr
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
@@ -73,11 +80,6 @@ jobs:
       # permission and so can never fetch anything at runtime.
       - name: Download language data
         run: bash scripts/download_models_for_build.sh
-
-      - name: Prepare build directories
-        run: |
-          # The SDK container builds as a non-root user
-          chmod -R 777 .
 
       - name: Build for ${{ matrix.arch }}
         run: |
