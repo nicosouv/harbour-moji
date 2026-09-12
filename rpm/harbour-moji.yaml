@@ -1,0 +1,68 @@
+Name: harbour-moji
+Summary: Moji OCR - read text from photos, offline
+Version: 0.1.0
+Release: 1
+# The contents of the Group field should be one of the groups listed here:
+# https://github.com/mer-tools/spectacle/blob/master/data/GROUPS
+Group: Qt/Qt
+URL: https://github.com/nicosouv/harbour-moji
+License: MIT (code) / Apache-2.0 (Tesseract and its language data)
+# This must be generated before uploading a package to a remote build service.
+# Usually this line does not need to be modified.
+Sources:
+- '%{name}-%{version}.tar.bz2'
+Description: |
+  Reads text from photos, entirely on the device.
+
+  Moji has no network permission at all. The Sailjail sandbox refuses every
+  outbound connection, so "works offline" is enforced by the system rather
+  than promised by the developer. There is no account, no telemetry and no
+  model to download at first run: the language data is inside the package.
+
+  Features:
+  - 30 recognition languages built in, including Arabic, Hebrew, Chinese,
+    Japanese, Korean, Hindi, Thai and Vietnamese
+  - Reads several languages at once, for documents that mix them
+  - Raw text, or tap a word in the photo to take out its line or paragraph
+  - IBANs, card numbers, ISBNs and passport codes checked against their own
+    checksums, so a digit the camera misread is caught rather than copied
+  - Interface in English and French
+  - webOS-inspired interface, with a Sailfish ambience theme
+
+Configure: cmake
+Builder: make
+
+# Build dependencies
+PkgConfigBR:
+  - Qt5Core
+  - Qt5Gui
+  - Qt5Qml
+  - Qt5Quick
+  - Qt5Concurrent
+  - Qt5Sql
+
+PkgBR:
+  - qt5-qttools-linguist
+
+# Runtime dependencies
+#
+# Sailfish.Pickers needs no entry of its own: it comes with the platform, which
+# harbour-nami relies on the same way.
+Requires:
+  - sailfishsilica-qt5 >= 0.10.9
+
+# All installed files
+#
+# %{_datadir}/%{name} covers qml/, translations/ and tessdata/ - the last being
+# 80MB of language data, and most of the package.
+Files:
+  - '%{_bindir}'
+  - '%{_datadir}/%{name}'
+  - '%{_datadir}/applications/%{name}.desktop'
+  - '%{_datadir}/icons/hicolor/*/apps/%{name}.png'
+
+# Additional files
+SetupOptions: -q
+
+# For more information about yaml and what's supported in Sailfish OS
+# build system, please see https://wiki.merproject.org/wiki/Spectacle

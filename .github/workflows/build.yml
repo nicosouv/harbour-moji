@@ -1,0 +1,96 @@
+name: Build
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  # Also on pull requests: the other lanes prove the code is correct and
+  # well-formed, but only this one proves it still builds for the device.
+  # Finding that out when the tag is already pushed means burning a version
+  # number on a build error.
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  SAILFISH_RELEASE: '5.0.0.43'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [aarch64, armv7hl]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+
+      # The tag is the single source of the version. The three files that
+      # carry one are rewritten from it here rather than being kept in sync
+      # by hand, which is how they drift apart.
+      - name: Set the version from the tag
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "Building version $VERSION"
+          sed -i "s/^Version:.*/Version: ${VERSION}/" rpm/harbour-moji.yaml
+          sed -i "s/^Version:.*/Version:    ${VERSION}/" rpm/harbour-moji.spec
+          sed -i "s/VERSION [0-9][0-9.]* LANGUAGES/VERSION ${VERSION} LANGUAGES/" CMakeLists.txt
+          grep -H '^Version' rpm/harbour-moji.yaml rpm/harbour-moji.spec
+          grep -H 'project(' CMakeLists.txt
+
+      # Fetches the 30 base languages, each verified against a pinned SHA256.
+      # They are never committed - the repo carries no binaries - but the RPM
+      # must contain every one of them, because the app has no network
+      # permission and so can never fetch anything at runtime.
+      - name: Download language data
+        run: bash scripts/download_models_for_build.sh
+
+      - name: Prepare build directories
+        run: |
+          # The SDK container builds as a non-root user
+          chmod -R 777 .
+
+      - name: Build for ${{ matrix.arch }}
+        run: |
+          docker run --rm \
+            -v $(pwd):/home/mersdk/src:z \
+            coderus/sailfishos-platform-sdk:${{ env.SAILFISH_RELEASE }} \
+            bash -c "cd /home/mersdk/src && mb2 -t SailfishOS-${{ env.SAILFISH_RELEASE }}-${{ matrix.arch }} build"
+
+      - name: List built packages
+        run: ls -lh RPMS/
+
+      - name: Upload RPM
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: harbour-moji-${{ matrix.arch }}
+          path: RPMS/*.rpm
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+
+      - name: List downloaded files
+        run: ls -lR
+
+      - name: Create Release
+        uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b  # v3.0.1
+        with:
+          # download-artifact v8 no longer nests single artifacts in a
+          # per-artifact directory; match RPMs wherever they land
+          files: |
+            **/*.rpm
+            *.rpm
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

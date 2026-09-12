@@ -1,0 +1,16 @@
+[Desktop Entry]
+Type=Application
+X-Nemo-Application-Type=silica-qt5
+Icon=harbour-moji
+Exec=harbour-moji
+Name=Moji OCR
+
+[X-Sailjail]
+# No Internet permission, deliberately. Sailjail then makes the sandbox refuse
+# every outbound connection, so "works entirely offline" stops being a promise in
+# a README and becomes something the OS enforces whether the code deserves the
+# trust or not. If a future feature seems to need the network, that is the line
+# to argue about first.
+Permissions=Camera;Pictures;Downloads;Sharing
+OrganizationName=harbour-moji
+ApplicationName=harbour-moji

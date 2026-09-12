@@ -1,0 +1,53 @@
+# C++ objects and libs
+*.o
+*.a
+*.so
+*.so.*
+*.dylib
+
+# Qt
+*.moc
+moc_*.cpp
+moc_*.h
+qrc_*.cpp
+ui_*.h
+Makefile*
+*build-*
+*.qm
+*.qmlc
+*.jsc
+.qtc_clangd
+CMakeLists.txt.user*
+compile_commands.json
+
+# Sailfish OS
+RPMS/
+
+# Cross-compiled native dependencies, built by CI inside the SDK container and
+# cached there on the hash of their build script.
+3rdparty/
+
+# Tesseract language data: downloaded by scripts/download_models_for_build.sh,
+# pinned by SHA256, and bundled into the RPM. 27MB of binaries have no business
+# in a git history - the app ships them, the repo does not carry them.
+tessdata/
+
+# Build directories
+build/
+.obj/
+.moc/
+.ui/
+.rcc/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc

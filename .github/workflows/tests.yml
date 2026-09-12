@@ -1,0 +1,83 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  # Fast lane: no Qt, no container, runs in seconds on every push
+  static:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+
+      - name: QML anti-pattern checks
+        run: python3 scripts/check_qml.py
+
+      - name: Translation catalogues match the QML and the C++
+        run: python3 scripts/check_translations.py
+
+  # Plain Ubuntu, no Sailfish SDK and no Tesseract: the result structure, the
+  # layout queries and the field checksums are deliberately free of anything
+  # Sailfish- or OCR-specific, so they can be tested on a machine that could
+  # never build the app itself.
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+
+      - name: Install Qt5
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            qtbase5-dev qtdeclarative5-dev libqt5sql5-sqlite \
+            cmake ninja-build
+
+      - name: Build tests
+        run: |
+          cmake -S tests -B build-tests -G Ninja -DCMAKE_BUILD_TYPE=Debug
+          cmake --build build-tests
+
+      - name: Run tests
+        run: QT_QPA_PLATFORM=offscreen ctest --test-dir build-tests --output-on-failure
+
+  # The unit tests cover the pure layers only, which means nothing above ever
+  # compiles main, the settings or the engine. This does.
+  # Without it, a typo there would first be seen by a tag's RPM build - after
+  # the version number has already been spent.
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+
+      - name: Install Qt5
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            qtbase5-dev qtdeclarative5-dev g++ pkg-config
+
+      - name: Compile-check src/
+        run: bash tests/syntax-check.sh
+
+  # Proves the catalogues are well-formed XML that lrelease accepts. The
+  # static lane only compares them to the sources; a malformed one would get
+  # that far and then fail inside the RPM build.
+  translations:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+
+      - name: Install the linguist tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends qttools5-dev-tools
+
+      - name: Compile the catalogues
+        run: lrelease translations/*.ts
