@@ -49,6 +49,7 @@ set(CORE_SOURCES
     src/textlayout.cpp
     src/fieldparser.cpp
     src/imageprep.cpp
+    src/tableextract.cpp
 )
 
 set(CORE_HEADERS
@@ -56,6 +57,7 @@ set(CORE_HEADERS
     src/textlayout.h
     src/fieldparser.h
     src/imageprep.h
+    src/tableextract.h
 )
 
 set(SOURCES

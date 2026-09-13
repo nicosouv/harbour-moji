@@ -215,6 +215,10 @@
         <translation>Impossible d'enregistrer le PDF</translation>
     </message>
     <message>
+        <source>Could not save the table</source>
+        <translation>Impossible d'enregistrer le tableau</translation>
+    </message>
+    <message>
         <source>Drag a box around the part you want</source>
         <translation>Tracez un cadre autour de la partie voulue</translation>
     </message>
@@ -273,6 +277,10 @@
     <message>
         <source>Save as searchable PDF</source>
         <translation>Enregistrer en PDF cherchable</translation>
+    </message>
+    <message>
+        <source>Save the table as CSV</source>
+        <translation>Enregistrer le tableau en CSV</translation>
     </message>
     <message>
         <source>Saved to Downloads as %1</source>

@@ -91,3 +91,16 @@ add_executable(tst_pdfexport
 target_include_directories(tst_pdfexport PRIVATE ${MOJI_SRC})
 target_link_libraries(tst_pdfexport Qt5::Core Qt5::Gui Qt5::Test)
 add_test(NAME pdfexport COMMAND tst_pdfexport)
+
+# Reading a table out of a block that never declared itself one: the column
+# boundaries are the vertical channels no word crosses. The interesting cases are
+# the refusals - a paragraph is not a table - and CSV escaping, where an
+# unescaped European price silently splits a column.
+add_executable(tst_tableextract
+    ${CMAKE_CURRENT_LIST_DIR}/tst_tableextract.cpp
+    ${MOJI_SRC}/tableextract.cpp
+    ${MOJI_SRC}/ocrresult.cpp
+)
+target_include_directories(tst_tableextract PRIVATE ${MOJI_SRC})
+target_link_libraries(tst_tableextract Qt5::Core Qt5::Gui Qt5::Test)
+add_test(NAME tableextract COMMAND tst_tableextract)

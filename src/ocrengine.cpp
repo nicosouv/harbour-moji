@@ -1,6 +1,8 @@
 #include "ocrengine.h"
 
+#include <QFile>
 #include <QFileInfo>
+#include <QTextStream>
 #include <QLineF>
 #include <QImage>
 #include <QMutexLocker>
@@ -10,6 +12,7 @@
 #include <tesseract/resultiterator.h>
 
 #include "fieldparser.h"
+#include "tableextract.h"
 #include "pdfexport.h"
 #include "imageprep.h"
 #include "logging.h"
@@ -575,6 +578,58 @@ bool OcrEngine::exportPdf(const QUrl &imageUrl, const QString &path) const
     }
 
     return PdfExport::write(path, photo, m_result);
+}
+
+QVariantList OcrEngine::tables() const
+{
+    QVariantList list;
+    for (int block : m_result.blockNumbers()) {
+        const int columns = TableExtract::columnCount(m_result, block);
+        // Two columns is the least that can be a table; one is a paragraph, and
+        // offering a CSV export for a paragraph is worse than offering none.
+        if (columns < 2) {
+            continue;
+        }
+
+        const QRect box = m_result.blockBox(block);
+        QVariantMap map;
+        map.insert(QStringLiteral("block"), block);
+        map.insert(QStringLiteral("columns"), columns);
+        map.insert(QStringLiteral("rows"), TableExtract::cells(m_result, block).size());
+        map.insert(QStringLiteral("x"), box.x());
+        map.insert(QStringLiteral("y"), box.y());
+        map.insert(QStringLiteral("width"), box.width());
+        map.insert(QStringLiteral("height"), box.height());
+        list.append(map);
+    }
+    return list;
+}
+
+QString OcrEngine::csvOfBlock(int block) const
+{
+    return TableExtract::toCsv(m_result, block);
+}
+
+bool OcrEngine::exportCsv(const QString &path, int block) const
+{
+    const QString csv = csvOfBlock(block);
+    if (csv.isEmpty()) {
+        return false;
+    }
+
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        qCWarning(lcMoji) << "cannot write" << path << file.errorString();
+        return false;
+    }
+
+    QTextStream out(&file);
+    // Explicit UTF-8: a table off a French receipt is full of accented words, and
+    // the local 8-bit codec would mangle them differently on every device.
+    out.setCodec("UTF-8");
+    out << csv << QLatin1Char('\n');
+
+    return file.error() == QFile::NoError;
 }
 
 void OcrEngine::correctWord(int index, const QString &text)

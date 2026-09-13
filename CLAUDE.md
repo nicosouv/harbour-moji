@@ -66,6 +66,13 @@ slogan — as a build rule:
 
 ## Things worth not relearning
 
+- **A table is measurable without anything declaring itself one.** Tesseract
+  reports words, lines and blocks, never columns - but a table is a block whose
+  words pile into vertical bands, so the column boundaries are the channels no
+  word crosses. `tableextract` finds them against the median word height, which is
+  what makes one threshold work at any camera distance. A ruled table and a set of
+  aligned columns are indistinguishable at that level, which is why it works on a
+  receipt. Refusing a paragraph matters as much as finding a table.
 - **OCR output is untrusted text.** It is whatever was in front of the camera. A
   `Label` with `textFormat: Text.RichText` showing recognised text will follow
   `<img>` tags that were photographed, which turns a picture into a network

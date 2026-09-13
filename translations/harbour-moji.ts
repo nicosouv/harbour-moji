@@ -215,6 +215,10 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>Could not save the table</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Drag a box around the part you want</source>
         <translation type="unfinished"></translation>
     </message>
@@ -272,6 +276,10 @@
     </message>
     <message>
         <source>Save as searchable PDF</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Save the table as CSV</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

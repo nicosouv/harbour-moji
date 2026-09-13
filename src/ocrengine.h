@@ -99,6 +99,7 @@ public:
     QVariantList uncertainWords() const;
     int uncertainCount() const;
     QVariantList blocks() const;
+    QVariantList tables() const;
 
     // The text of one block, or of the whole page when block is negative.
     Q_INVOKABLE QString textOfBlock(int block) const;
@@ -109,6 +110,20 @@ public:
     // Writes the photo out as a PDF with the recognised text laid invisibly over
     // it: it looks exactly like the photograph and is fully searchable.
     Q_INVOKABLE bool exportPdf(const QUrl &imageUrl, const QString &path) const;
+
+    // The blocks that read as tables, with how many columns each has. A block is
+    // a table when its words pile into vertical bands separated by channels no
+    // word crosses - nothing on the page has to declare itself one, and a ruled
+    // table and a set of aligned columns are indistinguishable once you are only
+    // looking at where the words are.
+    Q_PROPERTY(QVariantList tables READ tables NOTIFY resultChanged)
+
+    // The block as CSV, empty when it does not read as a table.
+    Q_INVOKABLE QString csvOfBlock(int block) const;
+
+    // Writes that CSV to a file. Returns false if there is no table or the file
+    // cannot be written.
+    Q_INVOKABLE bool exportCsv(const QString &path, int block) const;
 
     // Replaces a word the recogniser got wrong. Everything derived from the text
     // - the raw text, the selection, the checksummed fields - follows.

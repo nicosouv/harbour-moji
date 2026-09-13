@@ -102,6 +102,18 @@ Page {
             banner.show(qsTr("All text copied"))
         } else if (id === "again") {
             page.readWhole()
+        } else if (id === "csv") {
+            // The first table found. A page with two is rare enough that picking
+            // between them can wait until someone meets one.
+            var block = ocr.tables[0].block
+            var base = page.imageUrl.toString().split("/").pop()
+                           .replace(/\.[^.]+$/, "") + ".csv"
+            var where = StandardPaths.download + "/" + base
+            if (ocr.exportCsv(where.replace("file://", ""), block)) {
+                banner.show(qsTr("Saved to Downloads as %1").arg(base))
+            } else {
+                banner.show(qsTr("Could not save the table"))
+            }
         }
     }
 
@@ -512,8 +524,17 @@ Page {
                     { glyph: "\u21ba", name: qsTr("Read again"),        id: "again" }
                 ]
 
+                // The table verb is separate because it is conditional: a page
+                // with no table must not offer to export one, and a greyed-out
+                // button that is usually greyed out is just clutter.
+                property var tableVerb: ({ glyph: "\u25a6",
+                                           name: qsTr("Save the table as CSV"),
+                                           id: "csv" })
+
                 Repeater {
-                    model: actions.verbs
+                    model: ocr.tables.length > 0
+                           ? actions.verbs.concat([actions.tableVerb])
+                           : actions.verbs
 
                     delegate: MouseArea {
                         width: Theme.itemSizeSmall
