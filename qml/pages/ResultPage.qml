@@ -23,11 +23,20 @@ Page {
     property var selection: ({ valid: false })
 
     // Which block the text panel is restricted to, or -1 for the whole page.
-    //
-    // Photograph a leaflet and the column next door arrives too. Tesseract already
-    // separated them; this simply lets the user say which one they meant, which is
-    // cheaper and more accurate than cropping the photo and reading it again.
     property int onlyBlock: -1
+
+    // Turned by hand, when the automatic choice got it wrong or the page is
+    // simply easier to read the other way up. Applied to the view only: the
+    // overlays are children of the same item, so they turn with the photo and
+    // stay aligned without a coordinate being recomputed.
+    property int viewRotation: 0
+
+    // Dragging across the photo marks out a region to read instead of the whole
+    // page. Tesseract separates columns well enough to pick one, but not when it
+    // merges two into a single block - and then pointing at the part you meant is
+    // the only way to say it.
+    property bool marking: false
+    property rect markedRegion: Qt.rect(0, 0, 0, 0)
 
     readonly property string primaryLanguage:
         settings.ocrLanguages.length > 0 ? settings.ocrLanguages[0] : "eng"
@@ -40,6 +49,8 @@ Page {
         return labels
     }
 
+    allowedOrientations: defaultAllowedOrientations
+
     // Saying which unit is selected is what makes the second tap understandable.
     // Without it the box just gets bigger and the user has to infer the rule.
     function scopeName(scope) {
@@ -49,7 +60,26 @@ Page {
         return qsTr("Word")
     }
 
-    allowedOrientations: defaultAllowedOrientations
+    function readWhole() {
+        ocr.recognise(page.imageUrl, settings.tesseractLanguages,
+                      settings.autoRotate, settings.enhanceContrast)
+    }
+
+    function readRegion(region) {
+        ocr.recogniseRegion(page.imageUrl, settings.tesseractLanguages,
+                            settings.autoRotate, settings.enhanceContrast,
+                            Math.round(region.x), Math.round(region.y),
+                            Math.round(region.width), Math.round(region.height))
+    }
+
+    function editWord(index, current) {
+        var dialog = pageStack.push(Qt.resolvedUrl("CorrectWordDialog.qml"),
+                                    { wordIndex: index, wordText: current })
+        dialog.accepted.connect(function () {
+            ocr.correctWord(dialog.wordIndex, dialog.wordText)
+            banner.show(qsTr("Corrected"))
+        })
+    }
 
     Connections {
         target: ocr
@@ -62,7 +92,7 @@ Page {
 
     Component.onCompleted: {
         if (imageUrl != "") {
-            ocr.recognise(imageUrl, settings.tesseractLanguages, settings.autoRotate)
+            readWhole()
         }
     }
 
@@ -88,10 +118,38 @@ Page {
                 }
             }
             MenuItem {
+                text: qsTr("Save as searchable PDF")
+                enabled: ocr.wordCount > 0
+                onClicked: {
+                    var name = page.imageUrl.toString().split("/").pop()
+                                   .replace(/\.[^.]+$/, "") + ".pdf"
+                    var target = StandardPaths.download + "/" + name
+                    if (ocr.exportPdf(page.imageUrl, target.replace("file://", ""))) {
+                        banner.show(qsTr("Saved to Downloads as %1").arg(name))
+                    } else {
+                        banner.show(qsTr("Could not save the PDF"))
+                    }
+                }
+            }
+            MenuItem {
+                text: page.marking ? qsTr("Cancel area") : qsTr("Read only an area")
+                enabled: !ocr.busy && ocr.imageSize.width > 0
+                onClicked: {
+                    page.marking = !page.marking
+                    page.markedRegion = Qt.rect(0, 0, 0, 0)
+                    if (page.marking) {
+                        banner.show(qsTr("Drag across the part you want"))
+                    }
+                }
+            }
+            MenuItem {
+                text: qsTr("Rotate the view")
+                onClicked: page.viewRotation = (page.viewRotation + 90) % 360
+            }
+            MenuItem {
                 text: qsTr("Read again")
                 enabled: !ocr.busy
-                onClicked: ocr.recognise(page.imageUrl, settings.tesseractLanguages,
-                                         settings.autoRotate)
+                onClicked: page.readWhole()
             }
         }
 
@@ -110,6 +168,9 @@ Page {
                                 : ocr.lastError)
             }
 
+            // The language belongs here, not only in Settings: it is the biggest
+            // single lever on quality, and the moment you discover it was wrong is
+            // the moment you are looking at a bad result.
             GroupPanel {
                 width: parent.width
                 title: qsTr("Language")
@@ -130,211 +191,285 @@ Page {
                             // Re-read straight away: nobody changes this setting
                             // for later, they change it because what is on screen
                             // came out wrong.
-                            ocr.recognise(page.imageUrl, settings.tesseractLanguages,
-                                          settings.autoRotate)
+                            page.readWhole()
                         }
                     }
                 }
             }
 
+            // Holds the rotated canvas. A quarter turn swaps the canvas's width
+            // and height, and a Column has to be told how much room that takes.
             Item {
-                id: canvas
+                id: frame
 
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
 
-                // Height from the image's own proportions, never from
-                // paintedHeight.
-                //
-                // paintedHeight is what the Image ended up drawing, which depends
-                // on the Image's height, which - the Image being anchored to fill
-                // this Item - depends on this height. Qt calls that a binding loop
-                // and says so once; what it does not say is that it then keeps
-                // re-evaluating the layout, which is what makes the page look
-                // frozen rather than merely wrong.
-                //
-                // implicitWidth/implicitHeight are the loaded image's own
-                // dimensions and are outputs of the loader, so nothing here feeds
-                // back into them. sourceSize would do as well once loaded, but it
-                // reports a zero height while only its width has been set, and a
-                // zero aspect collapses the photo to nothing on the first frame.
-                readonly property real aspect: photo.implicitWidth > 0
-                        ? photo.implicitHeight / photo.implicitWidth : 1
+                readonly property bool quarterTurned: page.viewRotation % 180 !== 0
+                height: quarterTurned ? canvas.width : canvas.height
 
-                height: width * aspect
+                Item {
+                    id: canvas
 
-                // The image now fills the width exactly, so one image pixel is
-                // this many screen pixels and there is no letterboxing to offset.
-                readonly property real ratio: ocr.imageSize.width > 0
-                        ? width / ocr.imageSize.width : 1
+                    anchors.centerIn: parent
+                    width: frame.quarterTurned ? frame.height : frame.width
 
-                readonly property real offsetX: 0
+                    // Height from the image's own proportions, never from
+                    // paintedHeight: that is what the Image drew, which depends on
+                    // the Image's height, which - anchored to fill this - depends
+                    // on this height. Qt calls that a binding loop, says so once,
+                    // and then keeps re-evaluating the layout, which on a device
+                    // looks like the page has frozen.
+                    //
+                    // implicitWidth/implicitHeight are the loaded image's own
+                    // dimensions, outputs of the loader, so nothing feeds back.
+                    readonly property real aspect: photo.implicitWidth > 0
+                            ? photo.implicitHeight / photo.implicitWidth : 1
 
-                Image {
-                    id: photo
+                    height: width * aspect
 
-                    anchors.fill: parent
-                    source: page.imageUrl
-                    fillMode: Image.PreserveAspectFit
-                    asynchronous: true
+                    // The image fills the width exactly, so one image pixel is
+                    // this many screen pixels and there is no letterboxing.
+                    readonly property real ratio: ocr.imageSize.width > 0
+                            ? width / ocr.imageSize.width : 1
 
-                    // The camera tags a portrait photo rather than rotating its
-                    // pixels, and QML ignores that tag unless asked. Without this
-                    // the preview lies on its side while OcrEngine - which does
-                    // apply the tag - reports boxes for the upright image, so
-                    // every box lands in the wrong place.
-                    autoTransform: true
-                    // Decoded at the size it is drawn, not the camera's: a 12
-                    // megapixel photo held at full resolution is ~48MB of pixels,
-                    // which is how an image viewer gets itself killed on a phone.
-                    sourceSize.width: page.width
-                }
+                    readonly property real offsetX: 0
 
-                // Where the text is. Without this the photo looks inert and
-                // nothing suggests it can be touched; with it, the page is
-                // visibly understood before anything is tapped.
-                //
-                // Per line, not per word: a page holds a couple of thousand words
-                // and a few dozen lines, and a Repeater over the former stutters.
-                Repeater {
-                    model: page.selection.valid === true ? [] : ocr.lines
+                    rotation: page.viewRotation
 
-                    delegate: Rectangle {
-                        x: canvas.offsetX + modelData.x * canvas.ratio
-                        y: modelData.y * canvas.ratio
-                        width: modelData.width * canvas.ratio
-                        height: modelData.height * canvas.ratio
-                        radius: Tokens.hairline * 2
+                    Behavior on rotation {
+                        NumberAnimation {
+                            duration: Tokens.durBase
+                            easing.type: Tokens.easingType
+                        }
+                    }
 
-                        // Weak lines are tinted, strong ones barely marked. This
-                        // is the confidence map: it points at the parts worth
-                        // reading twice without putting a number on anything.
-                        color: modelData.confidence < 70
-                               ? Theme.rgba(Theme.errorColor, 0.20)
-                               : Theme.rgba(Tokens.accentColor, 0.13)
+                    Image {
+                        id: photo
 
-                        opacity: ocr.busy ? 0 : 1
-                        Behavior on opacity {
-                            NumberAnimation {
-                                duration: Tokens.durSlow
-                                easing.type: Tokens.easingType
+                        anchors.fill: parent
+                        source: page.imageUrl
+                        fillMode: Image.PreserveAspectFit
+                        asynchronous: true
+
+                        // The camera tags a portrait photo rather than rotating
+                        // its pixels, and QML ignores that tag unless asked.
+                        // Without this the preview lies on its side while
+                        // OcrEngine - which does apply the tag - reports boxes for
+                        // the upright image, so every box lands wrong.
+                        autoTransform: true
+
+                        // Decoded at the size it is drawn, not the camera's: a 12
+                        // megapixel photo at full resolution is ~48MB of pixels,
+                        // which is how an image viewer gets itself killed.
+                        sourceSize.width: page.width
+                    }
+
+                    // Where the text is. Without this the photo looks inert and
+                    // nothing suggests it can be touched.
+                    //
+                    // Per line, not per word: a page holds a couple of thousand
+                    // words and a few dozen lines, and a Repeater over the former
+                    // stutters.
+                    Repeater {
+                        model: page.selection.valid === true ? [] : ocr.lines
+
+                        delegate: Rectangle {
+                            x: canvas.offsetX + modelData.x * canvas.ratio
+                            y: modelData.y * canvas.ratio
+                            width: modelData.width * canvas.ratio
+                            height: modelData.height * canvas.ratio
+                            radius: Tokens.hairline * 2
+
+                            // Weak lines tinted, strong ones barely marked: the
+                            // confidence map, pointing at what to read twice
+                            // without putting a number on anything.
+                            color: modelData.confidence < 70
+                                   ? Theme.rgba(Theme.errorColor, 0.20)
+                                   : Theme.rgba(Tokens.accentColor, 0.13)
+
+                            opacity: ocr.busy ? 0 : 1
+                            Behavior on opacity {
+                                NumberAnimation {
+                                    duration: Tokens.durSlow
+                                    easing.type: Tokens.easingType
+                                }
                             }
                         }
                     }
-                }
 
-                // The blocks, outlined so they can be picked. Only when there is
-                // a choice to make: one block is the whole photo and outlining it
-                // says nothing.
-                Repeater {
-                    model: (page.selection.valid === true || ocr.blocks.length < 2)
-                           ? [] : ocr.blocks
+                    // The blocks, outlined so they can be picked. Only when there
+                    // is a choice to make: one block is the whole photo, and
+                    // outlining it says nothing.
+                    Repeater {
+                        model: (page.selection.valid === true || ocr.blocks.length < 2)
+                               ? [] : ocr.blocks
 
-                    delegate: Rectangle {
-                        // Above the whole-photo tap handler, which is declared
-                        // after these and would otherwise swallow every tap meant
-                        // for a block or a doubtful word - which is exactly what
-                        // made retyping a word impossible to discover.
-                        z: 1
+                        delegate: Rectangle {
+                            // Above the whole-photo tap handler, which is declared
+                            // after these and would otherwise swallow every tap
+                            // meant for a block or a doubtful word.
+                            z: 1
 
-                        x: canvas.offsetX + modelData.x * canvas.ratio
-                        y: modelData.y * canvas.ratio
-                        width: modelData.width * canvas.ratio
-                        height: modelData.height * canvas.ratio
+                            x: canvas.offsetX + modelData.x * canvas.ratio
+                            y: modelData.y * canvas.ratio
+                            width: modelData.width * canvas.ratio
+                            height: modelData.height * canvas.ratio
 
-                        color: page.onlyBlock === modelData.block
-                               ? Theme.rgba(Tokens.onColor, 0.18) : "transparent"
+                            color: page.onlyBlock === modelData.block
+                                   ? Theme.rgba(Tokens.onColor, 0.18) : "transparent"
+                            border.width: Tokens.hairline * 2
+                            border.color: page.onlyBlock === modelData.block
+                                          ? Tokens.onColor
+                                          : Theme.rgba(Tokens.accentColor, 0.55)
+                            radius: Tokens.hairline * 3
+
+                            MouseArea {
+                                anchors.fill: parent
+                                enabled: !page.marking
+                                onClicked: {
+                                    page.onlyBlock = page.onlyBlock === modelData.block
+                                                     ? -1 : modelData.block
+                                }
+                            }
+                        }
+                    }
+
+                    // The words the recogniser doubted, tinted and tappable. Only
+                    // the doubtful ones: the rest are not worth an item each.
+                    Repeater {
+                        model: page.selection.valid === true ? [] : ocr.uncertainWords
+
+                        delegate: Rectangle {
+                            z: 2   // above the block outlines as well as the photo
+
+                            x: canvas.offsetX + modelData.x * canvas.ratio
+                            y: modelData.y * canvas.ratio
+                            width: modelData.width * canvas.ratio
+                            height: modelData.height * canvas.ratio
+                            radius: Tokens.hairline * 2
+
+                            color: Theme.rgba(Theme.errorColor, 0.30)
+                            border.width: Tokens.hairline
+                            border.color: Theme.errorColor
+
+                            MouseArea {
+                                anchors.fill: parent
+                                enabled: !page.marking
+                                onClicked: page.editWord(modelData.index, modelData.text)
+                            }
+                        }
+                    }
+
+                    // The area being marked out, while a drag is in progress.
+                    Rectangle {
+                        z: 3
+                        visible: page.marking && page.markedRegion.width > 0
+
+                        x: canvas.offsetX + page.markedRegion.x * canvas.ratio
+                        y: page.markedRegion.y * canvas.ratio
+                        width: page.markedRegion.width * canvas.ratio
+                        height: page.markedRegion.height * canvas.ratio
+
+                        color: Theme.rgba(Tokens.onColor, 0.20)
                         border.width: Tokens.hairline * 2
-                        border.color: page.onlyBlock === modelData.block
-                                      ? Tokens.onColor
-                                      : Theme.rgba(Tokens.accentColor, 0.55)
-                        radius: Tokens.hairline * 3
-
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: {
-                                page.onlyBlock = page.onlyBlock === modelData.block
-                                                 ? -1 : modelData.block
-                            }
-                        }
+                        border.color: Tokens.onColor
                     }
-                }
 
-                // The words the recogniser doubted, tinted and tappable. Only the
-                // doubtful ones: the rest are not worth an item each.
-                Repeater {
-                    model: page.selection.valid === true ? [] : ocr.uncertainWords
-
-                    delegate: Rectangle {
-                        z: 2   // above the block outlines as well as the photo
-
-                        x: canvas.offsetX + modelData.x * canvas.ratio
-                        y: modelData.y * canvas.ratio
-                        width: modelData.width * canvas.ratio
-                        height: modelData.height * canvas.ratio
+                    // The current selection.
+                    Rectangle {
+                        visible: page.selection.valid === true
+                        color: Theme.rgba(Tokens.onColor, 0.28)
+                        border.width: Tokens.hairline
+                        border.color: Tokens.onColor
                         radius: Tokens.hairline * 2
 
-                        color: Theme.rgba(Theme.errorColor, 0.30)
-                        border.width: Tokens.hairline
-                        border.color: Theme.errorColor
+                        x: canvas.offsetX + (page.selection.x || 0) * canvas.ratio
+                        y: (page.selection.y || 0) * canvas.ratio
+                        width: (page.selection.width || 0) * canvas.ratio
+                        height: (page.selection.height || 0) * canvas.ratio
 
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: page.editWord(modelData.index, modelData.text)
+                        Behavior on x { NumberAnimation { duration: Tokens.durFast; easing.type: Tokens.easingType } }
+                        Behavior on y { NumberAnimation { duration: Tokens.durFast; easing.type: Tokens.easingType } }
+                        Behavior on width { NumberAnimation { duration: Tokens.durFast; easing.type: Tokens.easingType } }
+                        Behavior on height { NumberAnimation { duration: Tokens.durFast; easing.type: Tokens.easingType } }
+                    }
+
+                    // Marking out an area. Above everything while it is on, inert
+                    // otherwise, so it never competes with the tap gestures.
+                    MouseArea {
+                        id: marker
+
+                        z: 4
+                        anchors.fill: parent
+                        enabled: page.marking
+
+                        property real startX: 0
+                        property real startY: 0
+
+                        onPressed: {
+                            startX = (mouse.x - canvas.offsetX) / canvas.ratio
+                            startY = mouse.y / canvas.ratio
+                            page.markedRegion = Qt.rect(startX, startY, 0, 0)
+                        }
+
+                        onPositionChanged: {
+                            var x = (mouse.x - canvas.offsetX) / canvas.ratio
+                            var y = mouse.y / canvas.ratio
+                            page.markedRegion = Qt.rect(Math.min(startX, x),
+                                                        Math.min(startY, y),
+                                                        Math.abs(x - startX),
+                                                        Math.abs(y - startY))
+                        }
+
+                        onReleased: {
+                            // A tap rather than a drag: too small to be an area,
+                            // and reading it would return nothing and look broken.
+                            if (page.markedRegion.width < 20
+                                    || page.markedRegion.height < 20) {
+                                page.markedRegion = Qt.rect(0, 0, 0, 0)
+                                return
+                            }
+                            page.marking = false
+                            page.onlyBlock = -1
+                            page.selection = ({ valid: false })
+                            page.readRegion(page.markedRegion)
                         }
                     }
-                }
 
-                // The current selection, drawn over the photo in image
-                // coordinates scaled to the screen.
-                Rectangle {
-                    visible: page.selection.valid === true
-                    color: Theme.rgba(Tokens.onColor, 0.28)
-                    border.width: Tokens.hairline
-                    border.color: Tokens.onColor
-                    radius: Tokens.hairline * 2
+                    // Tap to select. Declared last, so it sits under the overlays
+                    // above, which raise themselves with z.
+                    MouseArea {
+                        anchors.fill: parent
+                        enabled: ocr.wordCount > 0 && !page.marking
 
-                    x: canvas.offsetX + (page.selection.x || 0) * canvas.ratio
-                    y: (page.selection.y || 0) * canvas.ratio
-                    width: (page.selection.width || 0) * canvas.ratio
-                    height: (page.selection.height || 0) * canvas.ratio
+                        onClicked: {
+                            var imageX = (mouse.x - canvas.offsetX) / canvas.ratio
+                            var imageY = mouse.y / canvas.ratio
 
-                    Behavior on x { NumberAnimation { duration: Tokens.durFast; easing.type: Tokens.easingType } }
-                    Behavior on y { NumberAnimation { duration: Tokens.durFast; easing.type: Tokens.easingType } }
-                    Behavior on width { NumberAnimation { duration: Tokens.durFast; easing.type: Tokens.easingType } }
-                    Behavior on height { NumberAnimation { duration: Tokens.durFast; easing.type: Tokens.easingType } }
-                }
+                            // Inside what is already selected means "give me more
+                            // of it"; anywhere else starts again at a single word.
+                            // Two taps in the same place therefore walk outwards,
+                            // which is the entire interaction.
+                            var inside = page.selection.valid === true
+                                    && imageX >= page.selection.x
+                                    && imageX <= page.selection.x + page.selection.width
+                                    && imageY >= page.selection.y
+                                    && imageY <= page.selection.y + page.selection.height
 
-                MouseArea {
-                    anchors.fill: parent
-                    enabled: ocr.wordCount > 0
+                            page.currentScope = inside ? ocr.growScope(page.currentScope)
+                                                       : ocr.scopeWord()
 
-                    onClicked: {
-                        var imageX = (mouse.x - canvas.offsetX) / canvas.ratio
-                        var imageY = mouse.y / canvas.ratio
+                            // A fingertip is wider than a word box is tall, so a
+                            // miss falls back to the nearest word within this much.
+                            var tolerance = Math.round(Theme.itemSizeExtraSmall
+                                                       / canvas.ratio)
 
-                        // Inside what is already selected means "give me more of
-                        // it"; anywhere else starts again at a single word. Two
-                        // taps in the same place therefore walk outwards, which
-                        // is the entire interaction.
-                        var inside = page.selection.valid === true
-                                && imageX >= page.selection.x
-                                && imageX <= page.selection.x + page.selection.width
-                                && imageY >= page.selection.y
-                                && imageY <= page.selection.y + page.selection.height
-
-                        page.currentScope = inside ? ocr.growScope(page.currentScope)
-                                                   : ocr.scopeWord()
-
-                        // A fingertip is wider than a word box is tall, so a miss
-                        // falls back to the nearest word within this much.
-                        var tolerance = Math.round(Theme.itemSizeExtraSmall
-                                                   / canvas.ratio)
-
-                        page.selection = ocr.selectAt(Math.round(imageX),
-                                                      Math.round(imageY),
-                                                      page.currentScope,
-                                                      tolerance)
+                            page.selection = ocr.selectAt(Math.round(imageX),
+                                                          Math.round(imageY),
+                                                          page.currentScope,
+                                                          tolerance)
+                        }
                     }
                 }
             }
@@ -344,16 +479,14 @@ Page {
                 running: ocr.busy
                 size: BusyIndicatorSize.Large
                 // A Column still reserves space for an item that is merely not
-                // running, which leaves a hole the height of the indicator under
-                // the photo for the whole time the result is on screen.
+                // running, which leaves a hole under the photo for the whole time
+                // the result is on screen.
                 visible: ocr.busy
             }
 
-            // Mean confidence, stated plainly rather than as a bar. Below about
-            // 70 the recogniser is usually wrong rather than slightly wrong, and
-            // the useful advice at that point is to retake the photo - so that is
-            // what it says instead of showing a number and leaving the user to
-            // interpret it.
+            // Mean confidence, stated plainly rather than as a bar. Below about 70
+            // the recogniser is usually wrong rather than slightly wrong, and the
+            // useful advice then is to retake the photo - so that is what it says.
             Label {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
@@ -449,8 +582,8 @@ Page {
                                 : modelData.kindName
 
                         glyph: modelData.checkable
-                               ? (modelData.checksumValid ? "\u2713" : "!")
-                               : "\u00b7"
+                               ? (modelData.checksumValid ? "✓" : "!")
+                               : "·"
 
                         onClicked: {
                             Clipboard.text = modelData.value
@@ -486,8 +619,7 @@ Page {
                         //
                         // readOnly, because editing belongs to the correction
                         // flow, where a change is written back to the word it came
-                        // from and the checksums follow. Typing into this box would
-                        // change what is displayed and nothing else.
+                        // from and the checksums follow.
                         readOnly: true
                         selectByMouse: true
                         persistentSelection: true
@@ -508,15 +640,6 @@ Page {
                 }
             }
         }
-    }
-
-    function editWord(index, current) {
-        var dialog = pageStack.push(Qt.resolvedUrl("CorrectWordDialog.qml"),
-                                    { wordIndex: index, wordText: current })
-        dialog.accepted.connect(function () {
-            ocr.correctWord(dialog.wordIndex, dialog.wordText)
-            banner.show(qsTr("Corrected"))
-        })
     }
 
     Banner {

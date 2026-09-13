@@ -38,6 +38,13 @@ class Settings : public QObject
     Q_PROPERTY(bool autoRotate READ autoRotate WRITE setAutoRotate
                    NOTIFY autoRotateChanged)
 
+    // Threshold the photo against its local surroundings before recognising it.
+    // On by default: Tesseract binarises internally with one threshold for the
+    // whole page, which a hand-held photo's lighting gradient defeats. Worth
+    // turning off only for a flat, evenly lit scan, where it can do nothing.
+    Q_PROPERTY(bool enhanceContrast READ enhanceContrast WRITE setEnhanceContrast
+                   NOTIFY enhanceContrastChanged)
+
     // Which languages are actually present, read from the tessdata directory
     // rather than from a list in the code.
     //
@@ -63,6 +70,9 @@ public:
     bool autoRotate() const;
     void setAutoRotate(bool enabled);
 
+    bool enhanceContrast() const;
+    void setEnhanceContrast(bool enabled);
+
     QStringList installedLanguages() const;
 
     // A readable name for a Tesseract language code, for the picker.
@@ -82,6 +92,7 @@ signals:
     void themeChanged();
     void ocrLanguagesChanged();
     void autoRotateChanged();
+    void enhanceContrastChanged();
     void installedLanguagesChanged();
 
 private:

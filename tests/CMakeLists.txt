@@ -78,3 +78,16 @@ add_executable(tst_historystore
 target_include_directories(tst_historystore PRIVATE ${MOJI_SRC})
 target_link_libraries(tst_historystore Qt5::Core Qt5::Sql Qt5::Test)
 add_test(NAME historystore COMMAND tst_historystore)
+
+# Laying the recognised text invisibly over the photo. The geometry is the whole
+# test: a PDF that is slightly wrong here looks perfect - it is the photograph -
+# and only misbehaves when somebody searches it.
+add_executable(tst_pdfexport
+    ${CMAKE_CURRENT_LIST_DIR}/tst_pdfexport.cpp
+    ${MOJI_SRC}/pdfexport.cpp
+    ${MOJI_SRC}/ocrresult.cpp
+    ${MOJI_SRC}/logging.cpp
+)
+target_include_directories(tst_pdfexport PRIVATE ${MOJI_SRC})
+target_link_libraries(tst_pdfexport Qt5::Core Qt5::Gui Qt5::Test)
+add_test(NAME pdfexport COMMAND tst_pdfexport)

@@ -38,6 +38,10 @@ directory rather than from a list in the code.
 
 ## What it does with the text
 
+- **A searchable PDF**, written on the device. The photo with the recognised text
+  laid invisibly over it: it looks exactly like the photograph and any reader can
+  search, select and copy it. No server involved, which is the part nobody else
+  manages.
 - **Raw text**, to copy or export.
 - **Tap a word in the photo** and the selection grows to the structure the
   recogniser actually found — the line, then the paragraph, then the block —

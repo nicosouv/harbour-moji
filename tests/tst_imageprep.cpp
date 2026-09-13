@@ -60,6 +60,11 @@ private slots:
     void skewAngleHandlesNothingToMeasure();
     void turnedByRoundTripsABox();
     void turnedByLeavesTheImageUsable();
+
+    void binarisedProducesOnlyBlackAndWhite();
+    void binarisedKeepsTextOnAnEvenBackground();
+    void binarisedSurvivesALightingGradient();
+    void binarisedLeavesOtherFormatsAlone();
 };
 
 void TestImagePrep::scaleForLeavesSmallImagesAlone()
@@ -342,6 +347,96 @@ void TestImagePrep::turnedByLeavesTheImageUsable()
     QCOMPARE(turned.image.format(), QImage::Format_Grayscale8);
     // Turning makes the bounding box larger, never smaller.
     QVERIFY(turned.image.width() >= prepared.image.width());
+}
+
+// A page of small dark marks - characters, in effect - optionally lit unevenly:
+// bright on one side, shadowed on the other, as every hand-held photo is.
+//
+// The marks are deliberately small against the window the threshold averages
+// over. That is what real text is: a little ink on mostly paper. A solid band
+// spanning the frame would defeat any local method, because a window inside it
+// contains nothing but band and the band becomes its own background - true of
+// Bradley's method and of every other one, and not a case that text presents.
+static QImage page(bool gradient)
+{
+    const int w = 300, h = 200;
+    QImage image(w, h, QImage::Format_Grayscale8);
+
+    for (int y = 0; y < h; ++y) {
+        uchar *row = image.scanLine(y);
+        for (int x = 0; x < w; ++x) {
+            // Paper, then a gradient from well-lit to shadowed across the frame.
+            int value = gradient ? 60 + (170 * x) / w : 230;
+
+            // Glyph-sized marks: 6 wide, 12 tall, on a 16x20 grid, so any window
+            // around one is mostly paper.
+            const bool inRow = (y % 20) < 12 && y >= 20 && y < 180;
+            const bool inColumn = (x % 16) < 6 && x >= 20 && x < 280;
+            if (inRow && inColumn) {
+                value = qMax(0, value - 90);
+            }
+            row[x] = uchar(qBound(0, value, 255));
+        }
+    }
+    return image;
+}
+
+static int blackPixels(const QImage &image)
+{
+    int count = 0;
+    for (int y = 0; y < image.height(); ++y) {
+        const uchar *row = image.constScanLine(y);
+        for (int x = 0; x < image.width(); ++x) {
+            if (row[x] == 0) {
+                ++count;
+            }
+        }
+    }
+    return count;
+}
+
+void TestImagePrep::binarisedProducesOnlyBlackAndWhite()
+{
+    const QImage out = binarised(page(false));
+    QCOMPARE(out.format(), QImage::Format_Grayscale8);
+
+    for (int y = 0; y < out.height(); ++y) {
+        const uchar *row = out.constScanLine(y);
+        for (int x = 0; x < out.width(); ++x) {
+            QVERIFY2(row[x] == 0 || row[x] == 255, "every pixel must be ink or paper");
+        }
+    }
+}
+
+void TestImagePrep::binarisedKeepsTextOnAnEvenBackground()
+{
+    const int ink = blackPixels(binarised(page(false)));
+    // Some of the page is ink, and nothing like all of it.
+    QVERIFY2(ink > 1000, "the bars should survive");
+    QVERIFY2(ink < 300 * 200 / 2, "the paper should not be turned to ink");
+}
+
+void TestImagePrep::binarisedSurvivesALightingGradient()
+{
+    // The point of the whole exercise. Under one global threshold - which is what
+    // Tesseract applies internally - the shadowed end of this image is darker than
+    // the lit end's ink, so a single cut either loses the text on one side or
+    // floods the other. A local comparison cannot make that mistake.
+    const int even = blackPixels(binarised(page(false)));
+    const int lit = blackPixels(binarised(page(true)));
+
+    QVERIFY2(lit > even / 2,
+             "a lighting gradient must not swallow half the text");
+    QVERIFY2(lit < even * 2,
+             "a lighting gradient must not turn the shadowed side into ink");
+}
+
+void TestImagePrep::binarisedLeavesOtherFormatsAlone()
+{
+    // Handed something it cannot read one byte at a time, it must return it
+    // untouched rather than produce nonsense.
+    const QImage colour = photo(50, 50);
+    QCOMPARE(binarised(colour).format(), colour.format());
 }
 
 QTEST_APPLESS_MAIN(TestImagePrep)

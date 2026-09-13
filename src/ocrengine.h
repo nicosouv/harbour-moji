@@ -87,6 +87,13 @@ public:
     // The text of one block, or of the whole page when block is negative.
     Q_INVOKABLE QString textOfBlock(int block) const;
 
+    // The page with some blocks left out. Takes a list of block numbers.
+    Q_INVOKABLE QString textExcluding(const QVariantList &blocks) const;
+
+    // Writes the photo out as a PDF with the recognised text laid invisibly over
+    // it: it looks exactly like the photograph and is fully searchable.
+    Q_INVOKABLE bool exportPdf(const QUrl &imageUrl, const QString &path) const;
+
     // Replaces a word the recogniser got wrong. Everything derived from the text
     // - the raw text, the selection, the checksummed fields - follows.
     Q_INVOKABLE void correctWord(int index, const QString &text);
@@ -95,7 +102,17 @@ public:
     // autoRotate tries the page at 90 and 270 degrees as well, and keeps
     // whichever reading scored best. See Settings::autoRotate.
     Q_INVOKABLE void recognise(const QUrl &imageUrl, const QString &languages,
-                               bool autoRotate = true);
+                               bool autoRotate = true, bool enhance = true);
+
+    // Recognises only part of the photo, in the photo's own coordinates.
+    //
+    // Tesseract separates a page into blocks well enough to pick one, but not
+    // when it merges two columns into a single block - and then the only way to
+    // say "this bit, not that bit" is to point at it. Boxes still come back in
+    // the whole photo's coordinates, so the overlay needs no special case.
+    Q_INVOKABLE void recogniseRegion(const QUrl &imageUrl, const QString &languages,
+                                     bool autoRotate, bool enhance,
+                                     int x, int y, int width, int height);
 
     // Tap-to-extract. Point is in the coordinates of the original image, scope is
     // a TextLayout::Scope. Returns { valid, text, x, y, width, height }, empty
@@ -142,7 +159,7 @@ private:
 
     // Runs on the worker thread.
     Outcome run(const QString &path, const QString &languages,
-                bool autoRotate);
+                bool autoRotate, bool enhance, QRect region);
 
     void setBusy(bool busy);
     void setLastError(const QString &error);

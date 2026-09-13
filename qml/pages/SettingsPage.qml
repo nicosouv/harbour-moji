@@ -150,6 +150,49 @@ Page {
                         anchors {
                             left: parent.left
                             leftMargin: Theme.paddingLarge
+                            right: contrastSwitch.left
+                            rightMargin: Theme.paddingMedium
+                            verticalCenter: parent.verticalCenter
+                        }
+
+                        Label {
+                            width: parent.width
+                            text: qsTr("Even out the lighting")
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Tokens.primaryColor
+                            truncationMode: TruncationMode.Fade
+                        }
+
+                        Label {
+                            width: parent.width
+                            text: qsTr("Helps photographs; does nothing for a flat scan")
+                            font.pixelSize: Theme.fontSizeExtraSmall
+                            color: Tokens.secondaryColor
+                            wrapMode: Text.Wrap
+                        }
+                    }
+
+                    ToggleSwitch {
+                        id: contrastSwitch
+
+                        anchors {
+                            right: parent.right
+                            rightMargin: Theme.paddingLarge
+                            verticalCenter: parent.verticalCenter
+                        }
+                        checked: settings.enhanceContrast
+                        onCheckedChanged: settings.enhanceContrast = checked
+                    }
+                }
+
+                Item {
+                    width: parent.width
+                    height: Theme.itemSizeMedium
+
+                    Column {
+                        anchors {
+                            left: parent.left
+                            leftMargin: Theme.paddingLarge
                             right: rotateSwitch.left
                             rightMargin: Theme.paddingMedium
                             verticalCenter: parent.verticalCenter

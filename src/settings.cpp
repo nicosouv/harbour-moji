@@ -11,6 +11,7 @@ namespace {
 const char *kThemeKey = "theme";
 const char *kLanguagesKey = "ocrLanguages";
 const char *kAutoRotateKey = "autoRotate";
+const char *kEnhanceKey = "enhanceContrast";
 
 // Only the themes Tokens.qml actually implements. A stored value from a newer
 // version, or a hand-edited config, falls back rather than leaving the UI reading
@@ -161,4 +162,18 @@ QString Settings::languageName(const QString &code) const
 
     // Neither: show the code. A wrong name would be worse than a raw one.
     return code;
+}
+
+bool Settings::enhanceContrast() const
+{
+    return m_settings.value(QLatin1String(kEnhanceKey), true).toBool();
+}
+
+void Settings::setEnhanceContrast(bool enabled)
+{
+    if (enabled == enhanceContrast()) {
+        return;
+    }
+    m_settings.setValue(QLatin1String(kEnhanceKey), enabled);
+    emit enhanceContrastChanged();
 }

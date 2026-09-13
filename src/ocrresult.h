@@ -108,6 +108,11 @@ public:
     // The text of one block, joined the way text() joins the whole page.
     QString blockText(int block) const;
 
+    // The page without the blocks listed - a column of a leaflet, a caption, the
+    // page next door that got into the frame. The inverse of picking one, and the
+    // one that matters when a page has five blocks and two are unwanted.
+    QString textExcludingBlocks(const QVector<int> &blocks) const;
+
     // Mean confidence over one line, for the same reason: a page's weak spots are
     // legible per line and meaningless per word.
     float lineConfidence(int line) const;

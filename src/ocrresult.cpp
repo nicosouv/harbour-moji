@@ -158,6 +158,33 @@ QString OcrResult::blockText(int block) const
     return out;
 }
 
+QString OcrResult::textExcludingBlocks(const QVector<int> &blocks) const
+{
+    QString out;
+    int previousLine = -1;
+    int previousParagraph = -1;
+
+    for (const OcrWord &word : m_words) {
+        if (blocks.contains(word.block)) {
+            continue;
+        }
+        if (previousLine < 0) {
+            // First word kept.
+        } else if (word.paragraph != previousParagraph) {
+            out += QLatin1String("\n\n");
+        } else if (word.line != previousLine) {
+            out += QLatin1Char('\n');
+        } else {
+            out += QLatin1Char(' ');
+        }
+        out += word.text;
+        previousLine = word.line;
+        previousParagraph = word.paragraph;
+    }
+
+    return out;
+}
+
 float OcrResult::lineConfidence(int line) const
 {
     float total = 0.0f;

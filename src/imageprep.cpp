@@ -58,6 +58,61 @@ QRect unrotateRect(const QRect &box, int degrees, const QSize &rotatedSize)
     }
 }
 
+QImage binarised(const QImage &grey, qreal windowFraction, qreal delta)
+{
+    if (grey.isNull() || grey.format() != QImage::Format_Grayscale8) {
+        return grey;
+    }
+
+    const int width = grey.width();
+    const int height = grey.height();
+
+    // Sums of every pixel above and to the left, so the total of any rectangle is
+    // four lookups. 64-bit because a 2400x1800 page of white is already 10^9.
+    QVector<qint64> integral((width + 1) * (height + 1), 0);
+
+    for (int y = 0; y < height; ++y) {
+        const uchar *row = grey.constScanLine(y);
+        qint64 rowSum = 0;
+        for (int x = 0; x < width; ++x) {
+            rowSum += row[x];
+            integral[(y + 1) * (width + 1) + (x + 1)] =
+                integral[y * (width + 1) + (x + 1)] + rowSum;
+        }
+    }
+
+    int window = qRound(width * windowFraction);
+    window = qMax(3, window | 1);          // odd, so it has a centre
+    const int half = window / 2;
+
+    QImage out(width, height, QImage::Format_Grayscale8);
+
+    for (int y = 0; y < height; ++y) {
+        const uchar *row = grey.constScanLine(y);
+        uchar *outRow = out.scanLine(y);
+
+        const int y1 = qMax(0, y - half);
+        const int y2 = qMin(height - 1, y + half);
+
+        for (int x = 0; x < width; ++x) {
+            const int x1 = qMax(0, x - half);
+            const int x2 = qMin(width - 1, x + half);
+
+            const qint64 area = qint64(x2 - x1 + 1) * (y2 - y1 + 1);
+            const qint64 sum = integral[(y2 + 1) * (width + 1) + (x2 + 1)]
+                             - integral[y1 * (width + 1) + (x2 + 1)]
+                             - integral[(y2 + 1) * (width + 1) + x1]
+                             + integral[y1 * (width + 1) + x1];
+
+            // Ink if the pixel is meaningfully darker than what surrounds it.
+            const qint64 scaled = qint64(row[x]) * area;
+            outRow[x] = (scaled < sum * (1.0 - delta)) ? 0 : 255;
+        }
+    }
+
+    return out;
+}
+
 qreal skewAngle(const QVector<QLineF> &baselines)
 {
     QVector<qreal> angles;

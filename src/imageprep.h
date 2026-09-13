@@ -100,6 +100,25 @@ QRect untransformRect(const QRect &box, const QTransform &transform);
 const qreal MinSkew = 0.75;
 const qreal MaxSkew = 20.0;
 
+// Black and white, thresholded against the local average rather than a single
+// value for the whole image.
+//
+// This is the largest free improvement available to a photograph. Tesseract
+// binarises internally with Otsu's method, which picks *one* threshold for the
+// whole page - excellent for a flatbed scan and defeated by the shadow gradient
+// that every hand-held photo has, where the same grey is paper on one side of the
+// frame and ink on the other. Comparing each pixel with the average of the window
+// around it instead removes the gradient by construction.
+//
+// Bradley and Roth's method, over an integral image, so the window average costs
+// four lookups per pixel regardless of how large the window is.
+//
+// windowFraction is the window's width as a fraction of the image's; delta is how
+// far below its neighbourhood a pixel must sit to count as ink. The defaults are
+// the ones that paper recommends.
+QImage binarised(const QImage &grey, qreal windowFraction = 0.125,
+                 qreal delta = 0.15);
+
 // Greyscale, no larger than maxEdge on its long side.
 //
 // Greyscale because Tesseract discards colour anyway, and one byte per pixel

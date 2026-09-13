@@ -136,6 +136,10 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>That area is outside the photo.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>That file is not an image this device can read.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -187,6 +191,10 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>Cancel area</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Confidence %1%</source>
         <translation type="unfinished"></translation>
     </message>
@@ -200,6 +208,14 @@
     </message>
     <message>
         <source>Corrected</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Could not save the PDF</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Drag across the part you want</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -239,7 +255,23 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>Read only an area</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Reading…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Rotate the view</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Save as searchable PDF</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Saved to Downloads as %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -295,6 +327,14 @@
     </message>
     <message>
         <source>Detect the page orientation before reading</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Even out the lighting</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Helps photographs; does nothing for a flat scan</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

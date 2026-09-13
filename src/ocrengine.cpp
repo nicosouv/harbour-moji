@@ -10,6 +10,7 @@
 #include <tesseract/resultiterator.h>
 
 #include "fieldparser.h"
+#include "pdfexport.h"
 #include "imageprep.h"
 #include "logging.h"
 
@@ -45,7 +46,14 @@ OcrEngine::~OcrEngine()
 }
 
 void OcrEngine::recognise(const QUrl &imageUrl, const QString &languages,
-                          bool autoRotate)
+                          bool autoRotate, bool enhance)
+{
+    recogniseRegion(imageUrl, languages, autoRotate, enhance, 0, 0, 0, 0);
+}
+
+void OcrEngine::recogniseRegion(const QUrl &imageUrl, const QString &languages,
+                                bool autoRotate, bool enhance,
+                                int x, int y, int width, int height)
 {
     if (m_busy) {
         qCWarning(lcMoji) << "already recognising; ignoring" << imageUrl;
@@ -63,8 +71,10 @@ void OcrEngine::recognise(const QUrl &imageUrl, const QString &languages,
     setLastError(QString());
     setBusy(true);
 
+    // An empty rectangle means the whole photo, which is what recognise() sends.
+    const QRect region(x, y, width, height);
     m_watcher.setFuture(QtConcurrent::run(this, &OcrEngine::run, path, languages,
-                                          autoRotate));
+                                          autoRotate, enhance, region));
 }
 
 bool OcrEngine::recogniseInto(const QImage &grey, OcrResult *out,
@@ -157,7 +167,7 @@ bool OcrEngine::recogniseInto(const QImage &grey, OcrResult *out,
 }
 
 OcrEngine::Outcome OcrEngine::run(const QString &path, const QString &languages,
-                                 bool autoRotate)
+                                 bool autoRotate, bool enhance, QRect region)
 {
     Outcome outcome;
 
@@ -173,10 +183,36 @@ OcrEngine::Outcome OcrEngine::run(const QString &path, const QString &languages,
 
     qCDebug(lcMoji) << "decoded" << source.size();
 
-    const ImagePrep::Prepared prepared = ImagePrep::prepare(source);
+    // Remembered before any crop replaces source: the overlay is drawn on the
+    // whole photo, so that is the size every box has to be expressed against.
+    const QSize fullSize = source.size();
+
+    // Cropping before anything else, so the downscale budget is spent on the part
+    // that was asked for rather than on the whole page. Everything downstream then
+    // works in the crop's coordinates, and the offset is added back at the end.
+    QPoint regionOffset;
+    if (!region.isEmpty()) {
+        const QRect clamped = region.intersected(source.rect());
+        if (clamped.isEmpty()) {
+            outcome.error = tr("That area is outside the photo.");
+            return outcome;
+        }
+        source = source.copy(clamped);
+        regionOffset = clamped.topLeft();
+        qCDebug(lcMoji) << "restricted to" << clamped;
+    }
+
+    ImagePrep::Prepared prepared = ImagePrep::prepare(source);
     if (prepared.isNull()) {
         outcome.error = tr("The image could not be prepared for reading.");
         return outcome;
+    }
+
+    if (enhance) {
+        // Thresholded against the local average. Tesseract would otherwise apply
+        // one threshold to the whole page, which a photograph's lighting gradient
+        // defeats - see ImagePrep::binarised.
+        prepared.image = ImagePrep::binarised(prepared.image);
     }
 
     qCDebug(lcMoji) << "prepared" << prepared.image.size()
@@ -348,6 +384,15 @@ OcrEngine::Outcome OcrEngine::run(const QString &path, const QString &languages,
         }
     }
 
+    // Back into the whole photo's coordinates, if only part of it was read. Done
+    // once at the end rather than threaded through every transform above.
+    if (!regionOffset.isNull()) {
+        for (int i = 0; i < best.count(); ++i) {
+            best.setWordBox(i, best.words().at(i).box.translated(regionOffset));
+        }
+        best.setImageSize(fullSize);
+    }
+
     outcome.result = best;
     return outcome;
 }
@@ -477,6 +522,32 @@ QVariantList OcrEngine::blocks() const
 QString OcrEngine::textOfBlock(int block) const
 {
     return block < 0 ? m_result.text() : m_result.blockText(block);
+}
+
+QString OcrEngine::textExcluding(const QVariantList &blocks) const
+{
+    QVector<int> excluded;
+    for (const QVariant &value : blocks) {
+        excluded.append(value.toInt());
+    }
+    return excluded.isEmpty() ? m_result.text()
+                              : m_result.textExcludingBlocks(excluded);
+}
+
+bool OcrEngine::exportPdf(const QUrl &imageUrl, const QString &path) const
+{
+    const QString source = imageUrl.isLocalFile() ? imageUrl.toLocalFile()
+                                                  : imageUrl.toString();
+
+    // Loaded upright, the same way recognition loaded it, or the page would be
+    // written sideways with the text sitting correctly over nothing.
+    const QImage photo = ImagePrep::loadUpright(source);
+    if (photo.isNull()) {
+        qCWarning(lcMoji) << "cannot read" << source << "to export it";
+        return false;
+    }
+
+    return PdfExport::write(path, photo, m_result);
 }
 
 void OcrEngine::correctWord(int index, const QString &text)

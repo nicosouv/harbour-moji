@@ -64,6 +64,7 @@ set(SOURCES
     src/settings.cpp
     src/ocrengine.cpp
     src/historystore.cpp
+    src/pdfexport.cpp
     ${CORE_SOURCES}
 )
 
@@ -72,6 +73,7 @@ set(HEADERS
     src/settings.h
     src/ocrengine.h
     src/historystore.h
+    src/pdfexport.h
     ${CORE_HEADERS}
 )
 

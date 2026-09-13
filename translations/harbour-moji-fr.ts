@@ -136,6 +136,10 @@
         <translation>Rien n'a pu être lu sur cette image.</translation>
     </message>
     <message>
+        <source>That area is outside the photo.</source>
+        <translation>Cette zone est en dehors de la photo.</translation>
+    </message>
+    <message>
         <source>That file is not an image this device can read.</source>
         <translation>Ce fichier n'est pas une image que cet appareil sait lire.</translation>
     </message>
@@ -187,6 +191,10 @@
         <translation>Bloc</translation>
     </message>
     <message>
+        <source>Cancel area</source>
+        <translation>Annuler la zone</translation>
+    </message>
+    <message>
         <source>Confidence %1%</source>
         <translation>Confiance %1 %</translation>
     </message>
@@ -201,6 +209,14 @@
     <message>
         <source>Corrected</source>
         <translation>Corrigé</translation>
+    </message>
+    <message>
+        <source>Could not save the PDF</source>
+        <translation>Impossible d'enregistrer le PDF</translation>
+    </message>
+    <message>
+        <source>Drag across the part you want</source>
+        <translation>Faites glisser sur la partie voulue</translation>
     </message>
     <message>
         <source>Found</source>
@@ -239,8 +255,24 @@
         <translation>Lire comme</translation>
     </message>
     <message>
+        <source>Read only an area</source>
+        <translation>Lire seulement une zone</translation>
+    </message>
+    <message>
         <source>Reading…</source>
         <translation>Lecture…</translation>
+    </message>
+    <message>
+        <source>Rotate the view</source>
+        <translation>Pivoter l'affichage</translation>
+    </message>
+    <message>
+        <source>Save as searchable PDF</source>
+        <translation>Enregistrer en PDF cherchable</translation>
+    </message>
+    <message>
+        <source>Saved to Downloads as %1</source>
+        <translation>Enregistré dans Téléchargements sous %1</translation>
     </message>
     <message>
         <source>Selected block</source>
@@ -296,6 +328,14 @@
     <message>
         <source>Detect the page orientation before reading</source>
         <translation>Détecter l'orientation de la page avant lecture</translation>
+    </message>
+    <message>
+        <source>Even out the lighting</source>
+        <translation>Uniformiser l'éclairage</translation>
+    </message>
+    <message>
+        <source>Helps photographs; does nothing for a flat scan</source>
+        <translation>Utile pour les photos ; sans effet sur un scan à plat</translation>
     </message>
     <message>
         <source>Installed languages are listed above. Moji never connects to the network — the sandbox does not permit it.</source>

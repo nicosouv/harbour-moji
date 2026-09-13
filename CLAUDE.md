@@ -135,6 +135,14 @@ slogan — as a build rule:
   recording a photo that turned out to have no text in it failed silently until a
   test caught it. Coerce, or make the column nullable - but decide, rather than
   finding out.
+- **Tesseract is not state of the art, and knowing where it is weak is the job.**
+  It is trained on clean scans near 300 DPI; a hand-held photo of a glossy page at
+  an angle is close to its worst case. Three levers, in order of value: local
+  binarisation before handing it the image (free - `ImagePrep::binarised`, because
+  Tesseract's internal Otsu picks *one* threshold for the whole page and a shadow
+  gradient defeats that); `tessdata_best` instead of `tessdata_fast`, which is
+  four times the size for a real accuracy gain; and a different engine entirely,
+  which is a project rather than a change.
 - `TessBaseAPI` is not thread-safe and initialisation is slow. One instance,
   owned by the engine, driven from a worker thread via `QtConcurrent`; never one
   per request.
