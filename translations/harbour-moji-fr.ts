@@ -124,12 +124,40 @@
         <translation>%1 mots</translation>
     </message>
     <message>
+        <source>%1 — checksum does not match, read it again</source>
+        <translation>%1 — la somme de contrôle ne correspond pas, à relire</translation>
+    </message>
+    <message>
+        <source>%1 — checksum verified</source>
+        <translation>%1 — somme de contrôle vérifiée</translation>
+    </message>
+    <message>
         <source>All text</source>
         <translation>Tout le texte</translation>
     </message>
     <message>
+        <source>All text copied</source>
+        <translation>Tout le texte copié</translation>
+    </message>
+    <message>
+        <source>Confidence %1%</source>
+        <translation>Confiance %1 %</translation>
+    </message>
+    <message>
+        <source>Copied</source>
+        <translation>Copié</translation>
+    </message>
+    <message>
         <source>Copy all text</source>
         <translation>Copier tout le texte</translation>
+    </message>
+    <message>
+        <source>Found</source>
+        <translation>Détecté</translation>
+    </message>
+    <message>
+        <source>Low confidence (%1%). Try again with more light, or fill the frame with the page.</source>
+        <translation>Confiance faible (%1 %). Réessayez avec plus de lumière, ou remplissez le cadre avec la page.</translation>
     </message>
     <message>
         <source>Read again</source>

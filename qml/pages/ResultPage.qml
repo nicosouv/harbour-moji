@@ -42,7 +42,10 @@ Page {
             MenuItem {
                 text: qsTr("Copy all text")
                 enabled: ocr.wordCount > 0
-                onClicked: Clipboard.text = ocr.text
+                onClicked: {
+                    Clipboard.text = ocr.text
+                    banner.show(qsTr("All text copied"))
+                }
             }
             MenuItem {
                 text: qsTr("Read again")
@@ -154,6 +157,23 @@ Page {
                 size: BusyIndicatorSize.Large
             }
 
+            // Mean confidence, stated plainly rather than as a bar. Below about
+            // 70 the recogniser is usually wrong rather than slightly wrong, and
+            // the useful advice at that point is to retake the photo - so that is
+            // what it says instead of showing a number and leaving the user to
+            // interpret it.
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                visible: ocr.wordCount > 0
+                wrapMode: Text.Wrap
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: ocr.confidence < 70 ? Theme.errorColor : Tokens.secondaryColor
+                text: ocr.confidence < 70
+                      ? qsTr("Low confidence (%1%). Try again with more light, or fill the frame with the page.").arg(Math.round(ocr.confidence))
+                      : qsTr("Confidence %1%").arg(Math.round(ocr.confidence))
+            }
+
             GroupPanel {
                 width: parent.width
                 title: qsTr("Selection")
@@ -164,7 +184,10 @@ Page {
                     title: page.selection.text || ""
                     detail: qsTr("Tap the photo again to widen, or tap here to copy")
                     glyph: "\""
-                    onClicked: Clipboard.text = page.selection.text
+                    onClicked: {
+                        Clipboard.text = page.selection.text
+                        banner.show(qsTr("Copied"))
+                    }
                 }
             }
 
@@ -176,6 +199,39 @@ Page {
                 font.pixelSize: Theme.fontSizeExtraSmall
                 color: Tokens.secondaryColor
                 text: qsTr("Tap a word in the photo. Tap it again to take the whole line, then the paragraph.")
+            }
+
+            GroupPanel {
+                width: parent.width
+                title: qsTr("Found")
+                visible: ocr.fields.length > 0
+
+                Repeater {
+                    model: ocr.fields
+
+                    delegate: PanelRow {
+                        width: parent.width
+
+                        title: modelData.value
+                        // The checksum verdict is the whole point, so it is said
+                        // in words rather than shown as a colour someone has to
+                        // learn. A field with nothing to check says neither.
+                        detail: modelData.checkable
+                                ? (modelData.checksumValid
+                                   ? qsTr("%1 — checksum verified").arg(modelData.kindName)
+                                   : qsTr("%1 — checksum does not match, read it again").arg(modelData.kindName))
+                                : modelData.kindName
+
+                        glyph: modelData.checkable
+                               ? (modelData.checksumValid ? "\u2713" : "!")
+                               : "\u00b7"
+
+                        onClicked: {
+                            Clipboard.text = modelData.value
+                            banner.show(qsTr("Copied"))
+                        }
+                    }
+                }
             }
 
             GroupPanel {
@@ -210,5 +266,9 @@ Page {
                 }
             }
         }
+    }
+
+    Banner {
+        id: banner
     }
 }

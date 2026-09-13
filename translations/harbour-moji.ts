@@ -124,11 +124,39 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>%1 — checksum does not match, read it again</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>%1 — checksum verified</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>All text</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>All text copied</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Confidence %1%</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Copied</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Copy all text</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Found</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Low confidence (%1%). Try again with more light, or fill the frame with the page.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

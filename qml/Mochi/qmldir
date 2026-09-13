@@ -7,6 +7,7 @@ GroupPanel 1.0 GroupPanel.qml
 PanelRow 1.0 PanelRow.qml
 
 Drawer 1.0 Drawer.qml
+Banner 1.0 Banner.qml
 
 # Module-private: Mochi's components use it, importers never see it.
 internal PanelBox PanelBox.qml

@@ -8,6 +8,7 @@
 #include <tesseract/baseapi.h>
 #include <tesseract/resultiterator.h>
 
+#include "fieldparser.h"
 #include "imageprep.h"
 #include "logging.h"
 
@@ -210,6 +211,30 @@ QVariantMap OcrEngine::selectAt(int x, int y, int scope, int tolerance) const
     map.insert(QStringLiteral("width"), selection.box.width());
     map.insert(QStringLiteral("height"), selection.box.height());
     return map;
+}
+
+QVariantList OcrEngine::fields() const
+{
+    QVariantList list;
+    for (const FieldParser::Field &field : FieldParser::scan(m_result.text())) {
+        QVariantMap map;
+        map.insert(QStringLiteral("kind"), field.kind);
+        // Untranslated: the UI names the kinds, because a C++ layer that calls
+        // tr() decides the wording for every caller of it.
+        map.insert(QStringLiteral("kindName"), FieldParser::kindName(field.kind));
+        map.insert(QStringLiteral("raw"), field.raw);
+        map.insert(QStringLiteral("value"), field.normalised);
+        map.insert(QStringLiteral("checksumValid"), field.checksumValid);
+        // Kinds that carry no checksum must not be shown as "verified": there was
+        // nothing to verify, and a green tick would be a claim.
+        map.insert(QStringLiteral("checkable"),
+                   field.kind == FieldParser::Iban
+                       || field.kind == FieldParser::CreditCard
+                       || field.kind == FieldParser::Isbn
+                       || field.kind == FieldParser::MrzLine);
+        list.append(map);
+    }
+    return list;
 }
 
 int OcrEngine::growScope(int scope) const

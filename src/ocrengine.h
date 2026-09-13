@@ -8,6 +8,8 @@
 #include <QUrl>
 #include <QVariantMap>
 
+#include <QVariantList>
+
 #include "ocrresult.h"
 #include "textlayout.h"
 
@@ -35,6 +37,13 @@ class OcrEngine : public QObject
     Q_PROPERTY(QSize imageSize READ imageSize NOTIFY resultChanged)
     Q_PROPERTY(QString lastError READ lastError NOTIFY lastErrorChanged)
 
+    // The structured things found in the text: IBANs, card numbers, ISBNs, a
+    // passport's machine-readable zone, emails, links. Each carries whether its
+    // own checksum agreed, which is the part worth showing - a photographed IBAN
+    // that fails mod-97 means "read this line again", and saying so is more use
+    // than copying the wrong digits confidently.
+    Q_PROPERTY(QVariantList fields READ fields NOTIFY resultChanged)
+
 public:
     explicit OcrEngine(const QString &tessdataPath, QObject *parent = nullptr);
     ~OcrEngine() override;
@@ -45,6 +54,7 @@ public:
     qreal confidence() const { return m_result.meanConfidence(); }
     QSize imageSize() const { return m_result.imageSize(); }
     QString lastError() const { return m_lastError; }
+    QVariantList fields() const;
 
     // languages is Tesseract's own spelling: "fra" or "fra+eng".
     Q_INVOKABLE void recognise(const QUrl &imageUrl, const QString &languages);
