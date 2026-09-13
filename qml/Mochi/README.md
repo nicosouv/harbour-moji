@@ -84,6 +84,16 @@ SilicaFlickable {
 }
 ```
 
+**Where an action goes.** Mojo put the create action *in* the list, as its last
+row, rather than behind a floating button — and the same reasoning puts every
+other verb there too. A pulley carries what is global to the app: settings, about.
+A page's own actions are rows in a group, where they are visible without being
+discovered.
+
+Filling a pulley with a page's verbs is the Silica habit this module exists to
+replace, and it is an easy one to fall back into, because a pulley is the quickest
+place to put something.
+
 `PanelRow` is not from the original drop — `GroupPanel` has no use without a row,
 and every consumer inventing its own is how a design language stops being one.
 

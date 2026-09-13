@@ -47,6 +47,11 @@ slogan — as a build rule:
 - Silica best practices; `scripts/check_qml.py` encodes the ones already paid
   for. UI is built from `qml/Mochi/` — read `qml/Mochi/README.md` before adding a
   control, and do not mix Mochi controls with Silica's on one page.
+- **A page's own actions are rows, not pulley entries.** The pulley carries what is
+  global — settings, about. Mojo put the create action in the list as its last row
+  rather than behind a button, and that is the gesture Mochi is for. Putting a
+  page's verbs in the pulley is the Silica habit being replaced, and it is the easy
+  mistake because a pulley is the quickest place to put something.
 - **Two language lists, and they are not the same list.** The *interface* is
   English and French; every new `qsTr()` or `tr()` needs an entry in both
   catalogues, and `scripts/check_translations.py` names the ones you missed. The

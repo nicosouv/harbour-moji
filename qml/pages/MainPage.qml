@@ -36,12 +36,6 @@ Page {
                 onClicked: pageStack.push(Qt.resolvedUrl("AboutPage.qml"))
             }
             MenuItem {
-                text: qsTr("Clear history")
-                visible: history.count > 0
-                onClicked: remorse.execute(qsTr("Clearing history"),
-                                           function () { history.forgetAll() })
-            }
-            MenuItem {
                 text: qsTr("Settings")
                 onClicked: pageStack.push(Qt.resolvedUrl("SettingsPage.qml"))
             }
@@ -129,6 +123,17 @@ Page {
                             }
                         }
                     }
+                }
+
+                // The group's own action, as its last row. Mojo put "add an item"
+                // there rather than behind a floating button; the same reasoning
+                // puts "clear these" there rather than in a menu.
+                PanelRow {
+                    width: parent.width
+                    title: qsTr("Clear history")
+                    glyph: "\u2715"
+                    onClicked: remorse.execute(qsTr("Clearing history"),
+                                               function () { history.forgetAll() })
                 }
             }
 

@@ -179,6 +179,10 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>After changing the language or the lighting</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>All text</source>
         <translation type="unfinished"></translation>
     </message>
@@ -219,11 +223,19 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Drag across the part you want</source>
+        <source>Do</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Drag a box around the part you want</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Found</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>If the page is the wrong way up</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -287,6 +299,10 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>Settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Showing one block. Tap its outline again for the whole page.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -299,7 +315,11 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>The text below can be edited. Pull down to rotate the photo, to read only part of it, or to save a searchable PDF.</source>
+        <source>The photo, with the text behind it</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The text below can be edited.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

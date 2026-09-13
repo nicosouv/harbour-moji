@@ -179,6 +179,10 @@
         <translation>%1 — touchez à nouveau la photo pour élargir, ou touchez ici pour copier</translation>
     </message>
     <message>
+        <source>After changing the language or the lighting</source>
+        <translation>Après avoir changé la langue ou l'éclairage</translation>
+    </message>
+    <message>
         <source>All text</source>
         <translation>Tout le texte</translation>
     </message>
@@ -219,12 +223,20 @@
         <translation>Impossible d'enregistrer le PDF</translation>
     </message>
     <message>
-        <source>Drag across the part you want</source>
-        <translation>Faites glisser sur la partie voulue</translation>
+        <source>Do</source>
+        <translation>Actions</translation>
+    </message>
+    <message>
+        <source>Drag a box around the part you want</source>
+        <translation>Tracez un cadre autour de la partie voulue</translation>
     </message>
     <message>
         <source>Found</source>
         <translation>Détecté</translation>
+    </message>
+    <message>
+        <source>If the page is the wrong way up</source>
+        <translation>Si la page est dans le mauvais sens</translation>
     </message>
     <message>
         <source>Language</source>
@@ -287,6 +299,10 @@
         <translation>Sélection</translation>
     </message>
     <message>
+        <source>Settings</source>
+        <translation>Paramètres</translation>
+    </message>
+    <message>
         <source>Showing one block. Tap its outline again for the whole page.</source>
         <translation>Un seul bloc affiché. Touchez son cadre à nouveau pour toute la page.</translation>
     </message>
@@ -299,8 +315,12 @@
         <translation>Texte</translation>
     </message>
     <message>
-        <source>The text below can be edited. Pull down to rotate the photo, to read only part of it, or to save a searchable PDF.</source>
-        <translation>Le texte ci-dessous est modifiable. Tirez vers le bas pour pivoter la photo, n'en lire qu'une partie, ou enregistrer un PDF cherchable.</translation>
+        <source>The photo, with the text behind it</source>
+        <translation>La photo, avec le texte derrière</translation>
+    </message>
+    <message>
+        <source>The text below can be edited.</source>
+        <translation>Le texte ci-dessous est modifiable.</translation>
     </message>
     <message>
         <source>Word</source>

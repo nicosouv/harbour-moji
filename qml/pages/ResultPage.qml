@@ -108,48 +108,15 @@ Page {
 
         VerticalScrollDecorator { }
 
+        // Only what is global to the app. Every action that belongs to *this*
+        // page is a row in the Actions group below, which is Mojo's rule and the
+        // reason Mochi exists: the create action lived as the last row of a list,
+        // not behind a floating button or a menu you have to know about. A pulley
+        // stuffed with the page's own verbs is the Silica habit Mochi replaces.
         PullDownMenu {
             MenuItem {
-                text: qsTr("Copy all text")
-                enabled: ocr.wordCount > 0
-                onClicked: {
-                    Clipboard.text = ocr.editedText
-                    banner.show(qsTr("All text copied"))
-                }
-            }
-            MenuItem {
-                text: qsTr("Save as searchable PDF")
-                enabled: ocr.wordCount > 0
-                onClicked: {
-                    var name = page.imageUrl.toString().split("/").pop()
-                                   .replace(/\.[^.]+$/, "") + ".pdf"
-                    var target = StandardPaths.download + "/" + name
-                    if (ocr.exportPdf(page.imageUrl, target.replace("file://", ""))) {
-                        banner.show(qsTr("Saved to Downloads as %1").arg(name))
-                    } else {
-                        banner.show(qsTr("Could not save the PDF"))
-                    }
-                }
-            }
-            MenuItem {
-                text: page.marking ? qsTr("Cancel area") : qsTr("Read only an area")
-                enabled: !ocr.busy && ocr.imageSize.width > 0
-                onClicked: {
-                    page.marking = !page.marking
-                    page.markedRegion = Qt.rect(0, 0, 0, 0)
-                    if (page.marking) {
-                        banner.show(qsTr("Drag across the part you want"))
-                    }
-                }
-            }
-            MenuItem {
-                text: qsTr("Rotate the view")
-                onClicked: page.viewRotation = (page.viewRotation + 90) % 360
-            }
-            MenuItem {
-                text: qsTr("Read again")
-                enabled: !ocr.busy
-                onClicked: page.readWhole()
+                text: qsTr("Settings")
+                onClicked: pageStack.push(Qt.resolvedUrl("SettingsPage.qml"))
             }
         }
 
@@ -474,6 +441,67 @@ Page {
                 }
             }
 
+            GroupPanel {
+                width: parent.width
+                title: qsTr("Do")
+                visible: ocr.wordCount > 0 || ocr.lastError !== ""
+
+                PanelRow {
+                    width: parent.width
+                    title: page.marking ? qsTr("Cancel area") : qsTr("Read only an area")
+                    detail: qsTr("Drag a box around the part you want")
+                    accent: true
+                    glyph: "⬚"
+                    onClicked: {
+                        page.marking = !page.marking
+                        page.markedRegion = Qt.rect(0, 0, 0, 0)
+                    }
+                }
+
+                PanelRow {
+                    width: parent.width
+                    title: qsTr("Rotate the view")
+                    detail: qsTr("If the page is the wrong way up")
+                    glyph: "↻"
+                    onClicked: page.viewRotation = (page.viewRotation + 90) % 360
+                }
+
+                PanelRow {
+                    width: parent.width
+                    title: qsTr("Save as searchable PDF")
+                    detail: qsTr("The photo, with the text behind it")
+                    glyph: "⇩"
+                    onClicked: {
+                        var name = page.imageUrl.toString().split("/").pop()
+                                       .replace(/\.[^.]+$/, "") + ".pdf"
+                        var target = StandardPaths.download + "/" + name
+                        if (ocr.exportPdf(page.imageUrl, target.replace("file://", ""))) {
+                            banner.show(qsTr("Saved to Downloads as %1").arg(name))
+                        } else {
+                            banner.show(qsTr("Could not save the PDF"))
+                        }
+                    }
+                }
+
+                PanelRow {
+                    width: parent.width
+                    title: qsTr("Copy all text")
+                    glyph: "⧉"
+                    onClicked: {
+                        Clipboard.text = ocr.editedText
+                        banner.show(qsTr("All text copied"))
+                    }
+                }
+
+                PanelRow {
+                    width: parent.width
+                    title: qsTr("Read again")
+                    detail: qsTr("After changing the language or the lighting")
+                    glyph: "↺"
+                    onClicked: page.readWhole()
+                }
+            }
+
             BusyIndicator {
                 anchors.horizontalCenter: parent.horizontalCenter
                 running: ocr.busy
@@ -535,7 +563,7 @@ Page {
                 wrapMode: Text.Wrap
                 font.pixelSize: Theme.fontSizeExtraSmall
                 color: Tokens.secondaryColor
-                text: qsTr("The text below can be edited. Pull down to rotate the photo, to read only part of it, or to save a searchable PDF.")
+                text: qsTr("The text below can be edited.")
             }
 
             Label {
