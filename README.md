@@ -112,6 +112,7 @@ docker run --rm -v "$PWD:/src:ro" -w /work ubuntu:24.04 bash -c '
     g++ pkg-config python3
   cp -r /src/. /work && cd /work
   python3 scripts/check_qml.py && python3 scripts/check_translations.py
+  python3 scripts/check_qt56.py
   bash tests/syntax-check.sh
   cmake -S tests -B build-tests -G Ninja && cmake --build build-tests
   QT_QPA_PLATFORM=offscreen ctest --test-dir build-tests --output-on-failure'

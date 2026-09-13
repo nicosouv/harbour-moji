@@ -75,6 +75,11 @@ slogan — as a build rule:
   yields word, line, paragraph and block boxes with a confidence each. Tapping a
   word and growing the selection to its real block is only possible because that
   structure exists — a detector/recogniser pair returns strings and nothing else.
+- **Every off-device lane compiles against a newer Qt than the device has.**
+  Ubuntu has 5.15, Sailfish has 5.6, so a call added in 5.8 passes
+  `tests/syntax-check.sh` and fails inside the RPM build on a tag.
+  `QDateTime::currentSecsSinceEpoch` cost a release that way;
+  `scripts/check_qt56.py` holds the list, and the list grows rather than shrinks.
 - **A QML import states the API version being asked for, not the one the device
   has.** Sailfish ships Qt 5.6, so `import QtQuick 2.5` resolves - but a file that
   says `2.0` and uses a 2.5 property does not merely lose that property: the whole

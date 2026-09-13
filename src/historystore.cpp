@@ -94,7 +94,9 @@ int HistoryStore::remember(const QString &imagePath, const QString &languages,
     // that turned out to have no text in it would fail to be recorded at all,
     // quietly. An empty reading is still a reading worth remembering.
     query.addBindValue(text.isNull() ? QString(QLatin1String("")) : text);
-    query.addBindValue(QDateTime::currentSecsSinceEpoch());
+    // Not currentSecsSinceEpoch(): that arrived in Qt 5.8 and Sailfish ships 5.6.
+    // The milliseconds form has been there since 4.7.
+    query.addBindValue(QDateTime::currentMSecsSinceEpoch() / 1000);
 
     if (!query.exec()) {
         qCWarning(lcMoji) << "cannot record a reading" << query.lastError().text();

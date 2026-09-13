@@ -21,6 +21,12 @@ jobs:
       - name: Translation catalogues match the QML and the C++
         run: python3 scripts/check_translations.py
 
+      # The compile-check lane below uses the distribution's Qt, which is newer
+      # than the 5.6 Sailfish ships - so it happily accepts calls the device
+      # rejects, and the failure surfaces during an RPM build on a tag.
+      - name: No Qt APIs newer than 5.6
+        run: python3 scripts/check_qt56.py
+
   # Plain Ubuntu, no Sailfish SDK and no Tesseract: the result structure, the
   # layout queries and the field checksums are deliberately free of anything
   # Sailfish- or OCR-specific, so they can be tested on a machine that could
