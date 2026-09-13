@@ -112,7 +112,14 @@ Page {
 
                         onClicked: {
                             if (modelData.imageExists) {
-                                page.read(modelData.imagePath)
+                                // With the text that was kept: reading the photo
+                                // again takes seconds and can come out differently,
+                                // and nothing about tapping a past reading asks for
+                                // that. "Read again" is on the page for when it is
+                                // wanted.
+                                pageStack.push(Qt.resolvedUrl("ResultPage.qml"),
+                                               { imageUrl: "file://" + modelData.imagePath,
+                                                 storedText: history.textOf(modelData.id) })
                             } else {
                                 // The photo is gone, but the text was kept. Show
                                 // that rather than offering a reading that cannot

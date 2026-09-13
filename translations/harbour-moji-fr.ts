@@ -179,10 +179,6 @@
         <translation>%1 — touchez à nouveau la photo pour élargir, ou touchez ici pour copier</translation>
     </message>
     <message>
-        <source>After changing the language or the lighting</source>
-        <translation>Après avoir changé la langue ou l'éclairage</translation>
-    </message>
-    <message>
         <source>All text</source>
         <translation>Tout le texte</translation>
     </message>
@@ -197,10 +193,6 @@
     <message>
         <source>Block</source>
         <translation>Bloc</translation>
-    </message>
-    <message>
-        <source>Cancel area</source>
-        <translation>Annuler la zone</translation>
     </message>
     <message>
         <source>Confidence %1%</source>
@@ -223,20 +215,12 @@
         <translation>Impossible d'enregistrer le PDF</translation>
     </message>
     <message>
-        <source>Do</source>
-        <translation>Actions</translation>
-    </message>
-    <message>
         <source>Drag a box around the part you want</source>
         <translation>Tracez un cadre autour de la partie voulue</translation>
     </message>
     <message>
         <source>Found</source>
         <translation>Détecté</translation>
-    </message>
-    <message>
-        <source>If the page is the wrong way up</source>
-        <translation>Si la page est dans le mauvais sens</translation>
     </message>
     <message>
         <source>Language</source>
@@ -269,6 +253,10 @@
     <message>
         <source>Read as</source>
         <translation>Lire comme</translation>
+    </message>
+    <message>
+        <source>Read earlier</source>
+        <translation>Lu précédemment</translation>
     </message>
     <message>
         <source>Read only an area</source>
@@ -313,10 +301,6 @@
     <message>
         <source>Text</source>
         <translation>Texte</translation>
-    </message>
-    <message>
-        <source>The photo, with the text behind it</source>
-        <translation>La photo, avec le texte derrière</translation>
     </message>
     <message>
         <source>The text below can be edited.</source>

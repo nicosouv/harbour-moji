@@ -179,10 +179,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>After changing the language or the lighting</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>All text</source>
         <translation type="unfinished"></translation>
     </message>
@@ -196,10 +192,6 @@
     </message>
     <message>
         <source>Block</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Cancel area</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -223,19 +215,11 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Do</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Drag a box around the part you want</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Found</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>If the page is the wrong way up</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -268,6 +252,10 @@
     </message>
     <message>
         <source>Read as</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Read earlier</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -312,10 +300,6 @@
     </message>
     <message>
         <source>Text</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>The photo, with the text behind it</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

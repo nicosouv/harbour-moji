@@ -17,6 +17,13 @@ Page {
 
     property url imageUrl
 
+    // Set when the page is opened from the history: the text was kept, so showing
+    // it costs nothing while recognising the photo again costs seconds and can
+    // come out differently. The photo is still shown, and "Read again" is there
+    // for anyone who wants a fresh reading - but it is asked for, not assumed.
+    property string storedText: ""
+    readonly property bool showingStored: storedText !== "" && ocr.wordCount === 0
+
     // Kept in the image's own coordinates, never the screen's, so it survives
     // rotation and zoom without being recomputed.
     property int currentScope: 0
@@ -72,6 +79,32 @@ Page {
                             Math.round(region.width), Math.round(region.height))
     }
 
+    function runAction(id) {
+        if (id === "area") {
+            page.marking = !page.marking
+            page.markedRegion = Qt.rect(0, 0, 0, 0)
+            if (page.marking) {
+                banner.show(qsTr("Drag a box around the part you want"))
+            }
+        } else if (id === "rotate") {
+            page.viewRotation = (page.viewRotation + 90) % 360
+        } else if (id === "pdf") {
+            var name = page.imageUrl.toString().split("/").pop()
+                           .replace(/\.[^.]+$/, "") + ".pdf"
+            var target = StandardPaths.download + "/" + name
+            if (ocr.exportPdf(page.imageUrl, target.replace("file://", ""))) {
+                banner.show(qsTr("Saved to Downloads as %1").arg(name))
+            } else {
+                banner.show(qsTr("Could not save the PDF"))
+            }
+        } else if (id === "copy") {
+            Clipboard.text = page.showingStored ? page.storedText : ocr.editedText
+            banner.show(qsTr("All text copied"))
+        } else if (id === "again") {
+            page.readWhole()
+        }
+    }
+
     function editWord(index, current) {
         var dialog = pageStack.push(Qt.resolvedUrl("CorrectWordDialog.qml"),
                                     { wordIndex: index, wordText: current })
@@ -91,7 +124,7 @@ Page {
     }
 
     Component.onCompleted: {
-        if (imageUrl != "") {
+        if (imageUrl != "" && storedText === "") {
             readWhole()
         }
     }
@@ -103,8 +136,17 @@ Page {
     }
 
     SilicaFlickable {
+        id: flickable
+
         anchors.fill: parent
         contentHeight: column.height + Theme.paddingLarge * 2
+
+        // A Flickable claims any drag that starts inside it, which is right for a
+        // page of text and exactly wrong while someone is trying to draw a box on
+        // the photo. Marking an area turns the scrolling off for the duration -
+        // preventStealing on the handler alone is not enough, because the
+        // Flickable takes the gesture before the handler is ever asked.
+        interactive: !page.marking
 
         VerticalScrollDecorator { }
 
@@ -132,7 +174,9 @@ Page {
                              ? qsTr("Reading…")
                              : (ocr.wordCount > 0
                                 ? qsTr("%1 words").arg(ocr.wordCount)
-                                : ocr.lastError)
+                                : (page.showingStored
+                                   ? qsTr("Read earlier")
+                                   : ocr.lastError))
             }
 
             // The language belongs here, not only in Settings: it is the biggest
@@ -371,6 +415,10 @@ Page {
                         anchors.fill: parent
                         enabled: page.marking
 
+                        // Belt and braces: refuse to hand the gesture back once it
+                        // has started, whatever is above.
+                        preventStealing: true
+
                         property real startX: 0
                         property real startY: 0
 
@@ -441,64 +489,57 @@ Page {
                 }
             }
 
-            GroupPanel {
-                width: parent.width
-                title: qsTr("Do")
+            // A bar, not five rows with subtitles. The rows read well on their own
+            // and take more of the screen than the photograph they act on, which
+            // inverts what the page is about - Mojo's toolbars were a strip of
+            // glyphs at the edge for exactly this reason.
+            //
+            // Still not the pulley: these are visible, and a press-and-hold names
+            // each one for anybody who does not recognise the glyph.
+            Row {
+                id: actions
+
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: Theme.paddingLarge
                 visible: ocr.wordCount > 0 || ocr.lastError !== ""
+                         || page.showingStored
 
-                PanelRow {
-                    width: parent.width
-                    title: page.marking ? qsTr("Cancel area") : qsTr("Read only an area")
-                    detail: qsTr("Drag a box around the part you want")
-                    accent: true
-                    glyph: "⬚"
-                    onClicked: {
-                        page.marking = !page.marking
-                        page.markedRegion = Qt.rect(0, 0, 0, 0)
-                    }
-                }
+                property var verbs: [
+                    { glyph: "\u2b1a", name: qsTr("Read only an area"), id: "area" },
+                    { glyph: "\u21bb", name: qsTr("Rotate the view"),   id: "rotate" },
+                    { glyph: "\u21e9", name: qsTr("Save as searchable PDF"), id: "pdf" },
+                    { glyph: "\u29c9", name: qsTr("Copy all text"),     id: "copy" },
+                    { glyph: "\u21ba", name: qsTr("Read again"),        id: "again" }
+                ]
 
-                PanelRow {
-                    width: parent.width
-                    title: qsTr("Rotate the view")
-                    detail: qsTr("If the page is the wrong way up")
-                    glyph: "↻"
-                    onClicked: page.viewRotation = (page.viewRotation + 90) % 360
-                }
+                Repeater {
+                    model: actions.verbs
 
-                PanelRow {
-                    width: parent.width
-                    title: qsTr("Save as searchable PDF")
-                    detail: qsTr("The photo, with the text behind it")
-                    glyph: "⇩"
-                    onClicked: {
-                        var name = page.imageUrl.toString().split("/").pop()
-                                       .replace(/\.[^.]+$/, "") + ".pdf"
-                        var target = StandardPaths.download + "/" + name
-                        if (ocr.exportPdf(page.imageUrl, target.replace("file://", ""))) {
-                            banner.show(qsTr("Saved to Downloads as %1").arg(name))
-                        } else {
-                            banner.show(qsTr("Could not save the PDF"))
+                    delegate: MouseArea {
+                        width: Theme.itemSizeSmall
+                        height: Theme.itemSizeSmall
+
+                        onClicked: page.runAction(modelData.id)
+                        onPressAndHold: banner.show(modelData.name)
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: Tokens.controlRadius
+                            color: parent.pressed ? Tokens.pressedColor
+                                                  : Tokens.panelColor
+                            border.width: Tokens.hairline
+                            border.color: (modelData.id === "area" && page.marking)
+                                          ? Tokens.onColor : Tokens.separatorColor
+
+                            Label {
+                                anchors.centerIn: parent
+                                text: modelData.glyph
+                                font.pixelSize: Theme.fontSizeLarge
+                                color: (modelData.id === "area" && page.marking)
+                                       ? Tokens.onColor : Tokens.accentColor
+                            }
                         }
                     }
-                }
-
-                PanelRow {
-                    width: parent.width
-                    title: qsTr("Copy all text")
-                    glyph: "⧉"
-                    onClicked: {
-                        Clipboard.text = ocr.editedText
-                        banner.show(qsTr("All text copied"))
-                    }
-                }
-
-                PanelRow {
-                    width: parent.width
-                    title: qsTr("Read again")
-                    detail: qsTr("After changing the language or the lighting")
-                    glyph: "↺"
-                    onClicked: page.readWhole()
                 }
             }
 
@@ -636,7 +677,7 @@ Page {
                 title: page.onlyBlock >= 0
                        ? qsTr("Selected block")
                        : (ocr.edited ? qsTr("All text (edited)") : qsTr("All text"))
-                visible: ocr.wordCount > 0
+                visible: ocr.wordCount > 0 || page.showingStored
 
                 Item {
                     width: parent.width
@@ -680,8 +721,11 @@ Page {
                         // Amended text when the whole page is shown; the block's
                         // own text when one is picked out, and then read-only,
                         // because writing a block back is a different problem.
-                        text: page.onlyBlock < 0 ? ocr.editedText
-                                                 : ocr.textOfBlock(page.onlyBlock)
+                        text: page.showingStored
+                              ? page.storedText
+                              : (page.onlyBlock < 0
+                                 ? ocr.editedText
+                                 : ocr.textOfBlock(page.onlyBlock))
                         wrapMode: TextEdit.Wrap
                         font.pixelSize: Theme.fontSizeExtraSmall
                         color: Tokens.primaryColor
