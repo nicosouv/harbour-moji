@@ -1,5 +1,7 @@
 #include "ocrresult.h"
 
+#include <cmath>
+
 void OcrResult::clear()
 {
     m_words.clear();
@@ -176,5 +178,5 @@ float OcrResult::meanConfidence() const
 
 float OcrResult::readingScore() const
 {
-    return m_words.size() * meanConfidence();
+    return meanConfidence() * std::sqrt(static_cast<float>(m_words.size()));
 }

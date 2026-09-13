@@ -58,6 +58,9 @@ private slots:
     void correctionRescuesTheChecksum();
     void correctionReachesASelection();
     void correctionIgnoresAnIndexOutOfRange();
+
+    void readingScorePrefersTheConfidentPass();
+    void readingScoreStillRejectsATinyPass();
 };
 
 void TestCorrection::uncertainWordsAreTheDoubtfulOnes()
@@ -147,6 +150,44 @@ void TestCorrection::correctionIgnoresAnIndexOutOfRange()
     result.setWordText(999, QStringLiteral("x"));
 
     QCOMPARE(result.text(), before);
+}
+
+// Choosing which way up the page was. Held to real numbers off a device, because
+// the first version of this got it backwards on exactly this page.
+static OcrResult reading(int words, float confidence)
+{
+    OcrResult result;
+    for (int i = 0; i < words; ++i) {
+        OcrWord word;
+        word.text = QStringLiteral("w");
+        word.box = QRect(0, i, 10, 1);
+        word.confidence = confidence;
+        result.append(word);
+    }
+    return result;
+}
+
+void TestCorrection::readingScorePrefersTheConfidentPass()
+{
+    // Measured on a leaflet photographed sideways. The upright pass found less
+    // than half as many words and was right; the sideways pass found 321
+    // fragments it barely believed.
+    const OcrResult sideways = reading(321, 37.6f);
+    const OcrResult upright  = reading(135, 74.7f);
+
+    QVERIFY2(upright.readingScore() > sideways.readingScore(),
+             "confidence must outweigh a pile of low-confidence fragments");
+}
+
+void TestCorrection::readingScoreStillRejectsATinyPass()
+{
+    // The opposite failure, which is why word count cannot be dropped entirely:
+    // a handful of very certain words must not beat a whole page of good ones.
+    const OcrResult scrap = reading(8, 95.0f);
+    const OcrResult page  = reading(300, 80.0f);
+
+    QVERIFY2(page.readingScore() > scrap.readingScore(),
+             "a whole page must beat a confident scrap");
 }
 
 QTEST_APPLESS_MAIN(TestCorrection)

@@ -29,6 +29,17 @@ Page {
     // cheaper and more accurate than cropping the photo and reading it again.
     property int onlyBlock: -1
 
+    readonly property string primaryLanguage:
+        settings.ocrLanguages.length > 0 ? settings.ocrLanguages[0] : "eng"
+
+    readonly property var languageLabels: {
+        var labels = []
+        for (var i = 0; i < settings.installedLanguages.length; ++i) {
+            labels.push(settings.languageName(settings.installedLanguages[i]))
+        }
+        return labels
+    }
+
     // Saying which unit is selected is what makes the second tap understandable.
     // Without it the box just gets bigger and the user has to infer the rule.
     function scopeName(scope) {
@@ -88,6 +99,33 @@ Page {
                              : (ocr.wordCount > 0
                                 ? qsTr("%1 words").arg(ocr.wordCount)
                                 : ocr.lastError)
+            }
+
+            GroupPanel {
+                width: parent.width
+                title: qsTr("Language")
+                visible: ocr.wordCount > 0 || ocr.lastError !== ""
+
+                Selector {
+                    width: parent.width
+                    label: qsTr("Read as")
+                    options: page.languageLabels
+                    currentIndex: {
+                        var i = settings.installedLanguages.indexOf(page.primaryLanguage)
+                        return i < 0 ? 0 : i
+                    }
+                    onCurrentIndexChanged: {
+                        var code = settings.installedLanguages[currentIndex]
+                        if (code && code !== page.primaryLanguage) {
+                            settings.ocrLanguages = [code]
+                            // Re-read straight away: nobody changes this setting
+                            // for later, they change it because what is on screen
+                            // came out wrong.
+                            ocr.recognise(page.imageUrl, settings.tesseractLanguages,
+                                          settings.autoRotate)
+                        }
+                    }
+                }
             }
 
             Item {
@@ -184,6 +222,12 @@ Page {
                            ? [] : ocr.blocks
 
                     delegate: Rectangle {
+                        // Above the whole-photo tap handler, which is declared
+                        // after these and would otherwise swallow every tap meant
+                        // for a block or a doubtful word - which is exactly what
+                        // made retyping a word impossible to discover.
+                        z: 1
+
                         x: canvas.offsetX + modelData.x * canvas.ratio
                         y: modelData.y * canvas.ratio
                         width: modelData.width * canvas.ratio
@@ -213,6 +257,8 @@ Page {
                     model: page.selection.valid === true ? [] : ocr.uncertainWords
 
                     delegate: Rectangle {
+                        z: 2   // above the block outlines as well as the photo
+
                         x: canvas.offsetX + modelData.x * canvas.ratio
                         y: modelData.y * canvas.ratio
                         width: modelData.width * canvas.ratio
@@ -414,7 +460,7 @@ Page {
                     width: parent.width
                     height: rawText.height + Theme.paddingLarge * 2
 
-                    Label {
+                    TextEdit {
                         id: rawText
 
                         anchors {
@@ -425,14 +471,30 @@ Page {
                             verticalCenter: parent.verticalCenter
                         }
 
+                        // A TextEdit rather than a Label, so a part of the result
+                        // can be selected and copied. Copying all of it is rarely
+                        // what someone wants from a page of text.
+                        //
+                        // readOnly, because editing belongs to the correction
+                        // flow, where a change is written back to the word it came
+                        // from and the checksums follow. Typing into this box would
+                        // change what is displayed and nothing else.
+                        readOnly: true
+                        selectByMouse: true
+                        persistentSelection: true
+
                         // Plain text, never RichText. This string is whatever was
                         // in front of the camera, so rendering it as markup would
                         // let a photographed <img> tag decide what this device
                         // fetches. scripts/check_qml.py fails the build on it.
+                        textFormat: TextEdit.PlainText
+
                         text: ocr.textOfBlock(page.onlyBlock)
-                        wrapMode: Text.Wrap
+                        wrapMode: TextEdit.Wrap
                         font.pixelSize: Theme.fontSizeExtraSmall
                         color: Tokens.primaryColor
+                        selectionColor: Tokens.selectionColor
+                        selectedTextColor: Tokens.primaryColor
                     }
                 }
             }

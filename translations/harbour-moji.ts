@@ -187,6 +187,10 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>Language</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Line</source>
         <translation type="unfinished"></translation>
     </message>
@@ -208,6 +212,10 @@
     </message>
     <message>
         <source>Read again</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Read as</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

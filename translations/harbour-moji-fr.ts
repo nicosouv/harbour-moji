@@ -187,6 +187,10 @@
         <translation>Détecté</translation>
     </message>
     <message>
+        <source>Language</source>
+        <translation>Langue</translation>
+    </message>
+    <message>
         <source>Line</source>
         <translation>Ligne</translation>
     </message>
@@ -209,6 +213,10 @@
     <message>
         <source>Read again</source>
         <translation>Relire</translation>
+    </message>
+    <message>
+        <source>Read as</source>
+        <translation>Lire comme</translation>
     </message>
     <message>
         <source>Reading…</source>

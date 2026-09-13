@@ -120,12 +120,20 @@ public:
     // How well this reading went, as one number, for choosing between the same
     // page recognised at different rotations.
     //
-    // Word count times mean confidence, and both halves are needed. Confidence
-    // alone picks the pass that found three letters it was sure of over the one
-    // that found four hundred words it was slightly less sure of. Word count
-    // alone picks the pass that found hundreds of pieces of noise. A page read
-    // the right way up beats one read sideways on both counts at once, which is
-    // what makes the product a usable signal rather than a clever one.
+    // Mean confidence times the square root of the word count. The square root is
+    // the whole point, and it was learned the hard way from a real page:
+    //
+    //     angle   0 : 321 words, confidence 37.6
+    //     angle  90 : 135 words, confidence 74.7   <- plainly the right way up
+    //     angle 270 : 151 words, confidence 36.6
+    //
+    // A plain product picks 0 degrees, because a page read sideways does not find
+    // *less* - it finds far more, all of it fragments the recogniser openly
+    // doubts. Confidence is the recogniser's own estimate of whether it read
+    // correctly, so it must dominate; word count only has to stop a pass that
+    // found almost nothing from winning on certainty alone. Damping it to a square
+    // root does both: 74.7*sqrt(135) beats 37.6*sqrt(321), while 80*sqrt(300)
+    // still beats 95*sqrt(8).
     float readingScore() const;
 
 private:

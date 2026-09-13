@@ -137,9 +137,9 @@ def check_richtext(path, lines):
     """Text rendered as rich text.
 
     Every string this app displays may be OCR output, and OCR output is
-    whatever was in front of the camera. A Label with textFormat set to
-    Text.RichText or Text.StyledText will interpret markup that was
-    photographed - it will follow an <img> tag in a picture of a page, which
+    whatever was in front of the camera. A Label or TextEdit whose textFormat
+    admits markup - RichText, StyledText, or AutoText, which decides for
+    itself - will interpret markup that was photographed - it will follow an <img> tag in a picture of a page, which
     turns reading a document into a network request, and it will let a
     photographed <a href> become a tappable link. Render recognised text as
     plain text.
@@ -147,7 +147,9 @@ def check_richtext(path, lines):
     findings = []
     for number, raw in enumerate(lines, start=1):
         line = strip_comments(raw)
-        if "Text.RichText" in line or "Text.StyledText" in line:
+        if any(token in line for token in ("Text.RichText", "Text.StyledText",
+                                           "TextEdit.RichText", "TextEdit.AutoText",
+                                           "Text.AutoText")):
             findings.append((number, line.strip()))
     return findings
 
