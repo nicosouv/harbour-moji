@@ -107,7 +107,10 @@ private:
     void setBusy(bool busy);
     void setLastError(const QString &error);
 
+    // The directory holding the .traineddata files, and its parent - which is
+    // what Tesseract's Init() wants. See the constructor.
     QString m_tessdataPath;
+    QString m_datapath;
     OcrResult m_result;
     QString m_lastError;
     bool m_busy = false;

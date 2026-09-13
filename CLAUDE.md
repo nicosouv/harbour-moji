@@ -75,6 +75,14 @@ slogan — as a build rule:
   yields word, line, paragraph and block boxes with a confidence each. Tapping a
   word and growing the selection to its real block is only possible because that
   structure exists — a detector/recogniser pair returns strings and nothing else.
+- **Two Tesseract initialisation traps, both of which look like something else.**
+  `Init()`'s datapath is the *parent* of the tessdata directory - it appends
+  `tessdata/` itself - so handing it the real directory makes it search
+  `.../tessdata/tessdata/` and report that the *language* could not be loaded.
+  And the engine must be named: `scripts/build_tesseract.sh` passes
+  `--disable-legacy`, so `OEM_DEFAULT` can resolve to a recogniser that is not in
+  the binary, which aborts the process instead of returning an error. Always
+  `OEM_LSTM_ONLY`.
 - `TessBaseAPI` is not thread-safe and initialisation is slow. One instance,
   owned by the engine, driven from a worker thread via `QtConcurrent`; never one
   per request.

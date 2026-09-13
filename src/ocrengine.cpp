@@ -16,6 +16,16 @@ OcrEngine::OcrEngine(const QString &tessdataPath, QObject *parent)
     : QObject(parent)
     , m_tessdataPath(tessdataPath)
 {
+    // Tesseract's datapath is the *parent* of the tessdata directory, not the
+    // directory itself: Init() appends "tessdata/" to whatever it is given. Handed
+    // the real directory it would look for .../tessdata/tessdata/eng.traineddata
+    // and report only that the language could not be loaded, which points at the
+    // language rather than at the path and is a genuinely slow thing to see.
+    //
+    // Callers pass the directory that actually holds the files, because that is
+    // the one they can check; the adjustment happens here, once.
+    m_datapath = QFileInfo(tessdataPath).absolutePath();
+
     connect(&m_watcher, &QFutureWatcher<Outcome>::finished,
             this, &OcrEngine::handleFinished);
 }
@@ -58,17 +68,25 @@ OcrEngine::Outcome OcrEngine::run(const QString &path, const QString &languages)
 {
     Outcome outcome;
 
+    qCDebug(lcMoji) << "reading" << path << "with" << languages;
+
     QImage source(path);
     if (source.isNull()) {
         outcome.error = tr("That file is not an image this device can read.");
         return outcome;
     }
 
+    qCDebug(lcMoji) << "decoded" << source.size();
+
     const ImagePrep::Prepared prepared = ImagePrep::prepare(source);
     if (prepared.isNull()) {
         outcome.error = tr("The image could not be prepared for reading.");
         return outcome;
     }
+
+    qCDebug(lcMoji) << "prepared" << prepared.image.size()
+                    << "scale" << prepared.scale
+                    << "format" << prepared.image.format();
 
     QMutexLocker locker(&m_apiMutex);
 
@@ -79,13 +97,39 @@ OcrEngine::Outcome OcrEngine::run(const QString &path, const QString &languages)
     // Init is tens of milliseconds per language, so it is done again only when
     // the language set actually changed.
     if (m_apiLanguages != languages) {
-        if (m_api->Init(m_tessdataPath.toUtf8().constData(),
-                        languages.toUtf8().constData()) != 0) {
+        // Checked before Init rather than after, so a missing language pack says
+        // which file is missing instead of "could not be loaded".
+        const QString first = languages.section(QLatin1Char('+'), 0, 0);
+        const QString probe = m_tessdataPath + QLatin1Char('/') + first
+                              + QStringLiteral(".traineddata");
+        if (!QFileInfo::exists(probe)) {
+            qCWarning(lcMoji) << "no language data at" << probe;
+            outcome.error = tr("The language data could not be loaded.");
+            return outcome;
+        }
+
+        qCDebug(lcMoji) << "initialising tesseract with" << languages
+                        << "datapath" << m_datapath;
+
+        // OEM_LSTM_ONLY, explicitly, and not the default.
+        //
+        // scripts/build_tesseract.sh passes --disable-legacy, so the old
+        // pre-neural recogniser is not merely unused - it is not in the binary.
+        // OEM_DEFAULT lets Tesseract decide, and if it decides on legacy it calls
+        // into code that was compiled out, which aborts the process rather than
+        // returning an error. Saying which engine we want keeps the build flag
+        // and the call in agreement.
+        const int status = m_api->Init(m_datapath.toUtf8().constData(),
+                                       languages.toUtf8().constData(),
+                                       tesseract::OEM_LSTM_ONLY);
+        if (status != 0) {
             m_apiLanguages.clear();
+            qCWarning(lcMoji) << "tesseract Init failed with" << status;
             outcome.error = tr("The language data could not be loaded.");
             return outcome;
         }
         m_apiLanguages = languages;
+        qCDebug(lcMoji) << "tesseract ready";
     }
 
     // Raw pixels straight from the QImage. Leptonica never reads the file, which
@@ -96,10 +140,14 @@ OcrEngine::Outcome OcrEngine::run(const QString &path, const QString &languages)
                     1,  // Format_Grayscale8: one byte per pixel
                     static_cast<int>(prepared.image.bytesPerLine()));
 
+    qCDebug(lcMoji) << "image set, recognising";
+
     if (m_api->Recognize(nullptr) != 0) {
         outcome.error = tr("Nothing could be read from that image.");
         return outcome;
     }
+
+    qCDebug(lcMoji) << "recognised, walking the result";
 
     tesseract::ResultIterator *it = m_api->GetIterator();
     if (!it) {
