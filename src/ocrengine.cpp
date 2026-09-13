@@ -411,6 +411,12 @@ void OcrEngine::handleFinished()
     }
 
     m_result = outcome.result;
+
+    // A new reading replaces any amendment: the text it was made against is gone.
+    m_edited = false;
+    m_editedText.clear();
+    emit editedTextChanged();
+
     qCDebug(lcMoji) << "read" << m_result.count() << "words, mean confidence"
                     << m_result.meanConfidence();
 
@@ -439,10 +445,31 @@ QVariantMap OcrEngine::selectAt(int x, int y, int scope, int tolerance) const
     return map;
 }
 
+QString OcrEngine::editedText() const
+{
+    return m_edited ? m_editedText : m_result.text();
+}
+
+void OcrEngine::setEditedText(const QString &text)
+{
+    if (text == editedText()) {
+        return;
+    }
+
+    // Matching the recognised text again counts as not edited, so the flag does
+    // not stay on after someone undoes their change.
+    m_edited = (text != m_result.text());
+    m_editedText = text;
+    emit editedTextChanged();
+}
+
 QVariantList OcrEngine::fields() const
 {
     QVariantList list;
-    for (const FieldParser::Field &field : FieldParser::scan(m_result.text())) {
+    // Scanned from what the user has, not from what was recognised: fixing a
+    // digit in the text box has to make the IBAN's checksum agree, the same way
+    // correcting the word does.
+    for (const FieldParser::Field &field : FieldParser::scan(editedText())) {
         QVariantMap map;
         map.insert(QStringLiteral("kind"), field.kind);
         // Untranslated: the UI names the kinds, because a C++ layer that calls
@@ -560,6 +587,12 @@ void OcrEngine::correctWord(int index, const QString &text)
 
     m_result.setWordText(index, text);
     qCDebug(lcMoji) << "corrected word" << index << "to" << text;
+
+    // A per-word correction is authoritative, so it also discards a whole-block
+    // amendment rather than leaving two versions of the truth.
+    m_edited = false;
+    m_editedText.clear();
+    emit editedTextChanged();
 
     // One signal drives the text, the selection, the confidence and the field
     // scan, because all of them are computed from the result rather than cached.

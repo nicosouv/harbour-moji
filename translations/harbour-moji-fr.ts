@@ -183,6 +183,10 @@
         <translation>Tout le texte</translation>
     </message>
     <message>
+        <source>All text (edited)</source>
+        <translation>Tout le texte (modifié)</translation>
+    </message>
+    <message>
         <source>All text copied</source>
         <translation>Tout le texte copié</translation>
     </message>
@@ -293,6 +297,10 @@
     <message>
         <source>Text</source>
         <translation>Texte</translation>
+    </message>
+    <message>
+        <source>The text below can be edited. Pull down to rotate the photo, to read only part of it, or to save a searchable PDF.</source>
+        <translation>Le texte ci-dessous est modifiable. Tirez vers le bas pour pivoter la photo, n'en lire qu'une partie, ou enregistrer un PDF cherchable.</translation>
     </message>
     <message>
         <source>Word</source>

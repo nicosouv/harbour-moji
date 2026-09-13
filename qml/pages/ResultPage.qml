@@ -86,7 +86,7 @@ Page {
         onFinished: {
             history.remember(page.imageUrl.toString().replace("file://", ""),
                              settings.tesseractLanguages,
-                             ocr.wordCount, ocr.confidence, ocr.text)
+                             ocr.wordCount, ocr.confidence, ocr.editedText)
         }
     }
 
@@ -113,7 +113,7 @@ Page {
                 text: qsTr("Copy all text")
                 enabled: ocr.wordCount > 0
                 onClicked: {
-                    Clipboard.text = ocr.text
+                    Clipboard.text = ocr.editedText
                     banner.show(qsTr("All text copied"))
                 }
             }
@@ -531,6 +531,16 @@ Page {
             Label {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
+                visible: ocr.wordCount > 0
+                wrapMode: Text.Wrap
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: Tokens.secondaryColor
+                text: qsTr("The text below can be edited. Pull down to rotate the photo, to read only part of it, or to save a searchable PDF.")
+            }
+
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
                 visible: ocr.blocks.length > 1 && page.selection.valid !== true
                 wrapMode: Text.Wrap
                 font.pixelSize: Theme.fontSizeExtraSmall
@@ -595,7 +605,9 @@ Page {
 
             GroupPanel {
                 width: parent.width
-                title: page.onlyBlock >= 0 ? qsTr("Selected block") : qsTr("All text")
+                title: page.onlyBlock >= 0
+                       ? qsTr("Selected block")
+                       : (ocr.edited ? qsTr("All text (edited)") : qsTr("All text"))
                 visible: ocr.wordCount > 0
 
                 Item {
@@ -613,16 +625,23 @@ Page {
                             verticalCenter: parent.verticalCenter
                         }
 
-                        // A TextEdit rather than a Label, so a part of the result
-                        // can be selected and copied. Copying all of it is rarely
-                        // what someone wants from a page of text.
-                        //
-                        // readOnly, because editing belongs to the correction
-                        // flow, where a change is written back to the word it came
-                        // from and the checksums follow.
-                        readOnly: true
+                        // Editable, and selectable. Correcting one word by tapping
+                        // it on the photo writes back to that word, so the boxes
+                        // and the confidence follow; editing here cannot do that -
+                        // there is no telling which word a new sentence belongs to
+                        // - so it amends the text alone. What is copied, shared and
+                        // remembered comes from here; what is drawn on the photo
+                        // still comes from the words.
+                        readOnly: page.onlyBlock >= 0
                         selectByMouse: true
                         persistentSelection: true
+                        inputMethodHints: Qt.ImhNoAutoUppercase
+
+                        onTextChanged: {
+                            if (page.onlyBlock < 0) {
+                                ocr.editedText = text
+                            }
+                        }
 
                         // Plain text, never RichText. This string is whatever was
                         // in front of the camera, so rendering it as markup would
@@ -630,7 +649,11 @@ Page {
                         // fetches. scripts/check_qml.py fails the build on it.
                         textFormat: TextEdit.PlainText
 
-                        text: ocr.textOfBlock(page.onlyBlock)
+                        // Amended text when the whole page is shown; the block's
+                        // own text when one is picked out, and then read-only,
+                        // because writing a block back is a different problem.
+                        text: page.onlyBlock < 0 ? ocr.editedText
+                                                 : ocr.textOfBlock(page.onlyBlock)
                         wrapMode: TextEdit.Wrap
                         font.pixelSize: Theme.fontSizeExtraSmall
                         color: Tokens.primaryColor

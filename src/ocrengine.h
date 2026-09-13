@@ -35,6 +35,18 @@ class OcrEngine : public QObject
 
     Q_PROPERTY(bool busy READ isBusy NOTIFY busyChanged)
     Q_PROPERTY(QString text READ text NOTIFY resultChanged)
+
+    // What the user ended up with: the recognised text, unless they amended it.
+    //
+    // Correcting a single word writes back to the word it came from, so the boxes
+    // and the checksums follow. Editing the whole block cannot do that - there is
+    // no telling which word a new sentence belongs to - so this is kept beside the
+    // result rather than inside it. Everything the user takes away (copy, share,
+    // the history entry) comes from here; everything drawn on the photo still
+    // comes from the words.
+    Q_PROPERTY(QString editedText READ editedText WRITE setEditedText
+                   NOTIFY editedTextChanged)
+    Q_PROPERTY(bool edited READ isEdited NOTIFY editedTextChanged)
     Q_PROPERTY(int wordCount READ wordCount NOTIFY resultChanged)
     Q_PROPERTY(qreal confidence READ confidence NOTIFY resultChanged)
     Q_PROPERTY(QSize imageSize READ imageSize NOTIFY resultChanged)
@@ -78,6 +90,10 @@ public:
     qreal confidence() const { return m_result.meanConfidence(); }
     QSize imageSize() const { return m_result.imageSize(); }
     QString lastError() const { return m_lastError; }
+    QString editedText() const;
+    void setEditedText(const QString &text);
+    bool isEdited() const { return m_edited; }
+
     QVariantList fields() const;
     QVariantList lines() const;
     QVariantList uncertainWords() const;
@@ -135,6 +151,7 @@ public:
 signals:
     void busyChanged();
     void resultChanged();
+    void editedTextChanged();
     void lastErrorChanged();
     void finished();
     void failed(const QString &message);
@@ -171,6 +188,8 @@ private:
     QStringList m_datapathCandidates;
     OcrResult m_result;
     QString m_lastError;
+    QString m_editedText;
+    bool m_edited = false;
     bool m_busy = false;
 
     QFutureWatcher<Outcome> m_watcher;

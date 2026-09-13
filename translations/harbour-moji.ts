@@ -183,6 +183,10 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>All text (edited)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>All text copied</source>
         <translation type="unfinished"></translation>
     </message>
@@ -292,6 +296,10 @@
     </message>
     <message>
         <source>Text</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The text below can be edited. Pull down to rotate the photo, to read only part of it, or to save a searchable PDF.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
