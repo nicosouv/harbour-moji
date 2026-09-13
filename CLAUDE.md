@@ -78,6 +78,10 @@ slogan — as a build rule:
 - `TessBaseAPI` is not thread-safe and initialisation is slow. One instance,
   owned by the engine, driven from a worker thread via `QtConcurrent`; never one
   per request.
+- `%{_libdir}` is `/usr/lib` on armv7hl and `/usr/lib64` on aarch64, so anything
+  installed there goes through `CMAKE_INSTALL_LIBDIR`, never a hardcoded `lib`.
+  Getting it wrong builds cleanly on both and then fails packaging on aarch64
+  alone, at `%files`, with an error that looks nothing like its cause.
 - **The gallery picker needs `MediaIndexing`, not just `Pictures`.** `Pictures`
   whitelists `~/Pictures` on the filesystem; the picker lists images by asking the
   tracker index over D-Bus, which is a different thing and a different permission.

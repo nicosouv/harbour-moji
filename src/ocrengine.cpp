@@ -237,6 +237,22 @@ QVariantList OcrEngine::fields() const
     return list;
 }
 
+QVariantList OcrEngine::lines() const
+{
+    QVariantList list;
+    for (int line : m_result.lineNumbers()) {
+        const QRect box = m_result.lineBox(line);
+        QVariantMap map;
+        map.insert(QStringLiteral("x"), box.x());
+        map.insert(QStringLiteral("y"), box.y());
+        map.insert(QStringLiteral("width"), box.width());
+        map.insert(QStringLiteral("height"), box.height());
+        map.insert(QStringLiteral("confidence"), m_result.lineConfidence(line));
+        list.append(map);
+    }
+    return list;
+}
+
 int OcrEngine::growScope(int scope) const
 {
     return TextLayout::grow(static_cast<TextLayout::Scope>(scope));

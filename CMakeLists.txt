@@ -21,6 +21,11 @@ set(THIRDPARTY_DIR ${CMAKE_SOURCE_DIR}/3rdparty)
 
 find_package(PkgConfig REQUIRED)
 
+# %{_libdir} is /usr/lib on armv7hl and /usr/lib64 on aarch64. Hardcoding "lib"
+# builds fine on both and then fails packaging on aarch64 only, at the %files
+# stage, long after anything that looks like a compile error.
+include(GNUInstallDirs)
+
 if(EXISTS ${THIRDPARTY_DIR}/tesseract)
     message(STATUS "Tesseract: bundled in 3rdparty/")
     set(TESSERACT_INCLUDE_DIRS
@@ -113,11 +118,13 @@ if(EXISTS ${THIRDPARTY_DIR}/tesseract)
         ${THIRDPARTY_DIR}/tesseract/lib/libtesseract.so*
         ${THIRDPARTY_DIR}/leptonica/lib/liblept.so*)
     install(FILES ${BUNDLED_LIBS}
-        DESTINATION lib/${PROJECT_NAME}
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME}
     )
     # So the loader finds them without a wrapper script setting LD_LIBRARY_PATH.
+    # Same libdir as above, or the rpath points at a directory that is only
+    # correct on one of the two architectures.
     set_target_properties(${PROJECT_NAME} PROPERTIES
-        INSTALL_RPATH "$ORIGIN/../lib/${PROJECT_NAME}"
+        INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME}"
         BUILD_WITH_INSTALL_RPATH TRUE
     )
 endif()

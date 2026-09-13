@@ -25,7 +25,10 @@ Item {
 
     property int duration: 3500
 
-    readonly property bool raised: bar.y < root.height
+    // Taken from the state flag, not from bar.y: y is animated, so a caller
+    // that checks raised immediately after show() would be told the banner is
+    // down because the animation has not moved yet.
+    readonly property bool raised: bar.raised
 
     function show(message) {
         label.text = message

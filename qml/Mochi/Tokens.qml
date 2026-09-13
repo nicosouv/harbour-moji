@@ -96,13 +96,6 @@ QtObject {
             : "#B1B1B1"
     readonly property color knobColor: ambient ? Theme.primaryColor : "#F6F6F6"
 
-    // Silica's controls are pills; webOS's were rounded rectangles, and keeping
-    // them square-ish is most of what makes them recognisable. In ambience mode
-    // that distinction is one more thing that would look foreign, so the corners
-    // round all the way there too.
-    readonly property real switchRadius: ambient ? controlHeight / 2
-                                                 : controlRadius
-
     // The track a Segmented control sits in.
     readonly property color trackColor: ambient
             ? Theme.rgba(Theme.primaryColor, 0.12)

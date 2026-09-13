@@ -132,12 +132,24 @@
         <translation>%1 — somme de contrôle vérifiée</translation>
     </message>
     <message>
+        <source>%1 — tap here to copy</source>
+        <translation>%1 — touchez ici pour copier</translation>
+    </message>
+    <message>
+        <source>%1 — tap the photo again to widen, or tap here to copy</source>
+        <translation>%1 — touchez à nouveau la photo pour élargir, ou touchez ici pour copier</translation>
+    </message>
+    <message>
         <source>All text</source>
         <translation>Tout le texte</translation>
     </message>
     <message>
         <source>All text copied</source>
         <translation>Tout le texte copié</translation>
+    </message>
+    <message>
+        <source>Block</source>
+        <translation>Bloc</translation>
     </message>
     <message>
         <source>Confidence %1%</source>
@@ -156,8 +168,20 @@
         <translation>Détecté</translation>
     </message>
     <message>
+        <source>Line</source>
+        <translation>Ligne</translation>
+    </message>
+    <message>
         <source>Low confidence (%1%). Try again with more light, or fill the frame with the page.</source>
         <translation>Confiance faible (%1 %). Réessayez avec plus de lumière, ou remplissez le cadre avec la page.</translation>
+    </message>
+    <message>
+        <source>No text found in this photo. More light and a closer frame usually fix it — or check the language in Settings.</source>
+        <translation>Aucun texte trouvé sur cette photo. Plus de lumière et un cadrage plus serré suffisent généralement — ou vérifiez la langue dans les paramètres.</translation>
+    </message>
+    <message>
+        <source>Paragraph</source>
+        <translation>Paragraphe</translation>
     </message>
     <message>
         <source>Read again</source>
@@ -176,12 +200,12 @@
         <translation>Touchez un mot sur la photo. Touchez-le à nouveau pour prendre toute la ligne, puis le paragraphe.</translation>
     </message>
     <message>
-        <source>Tap the photo again to widen, or tap here to copy</source>
-        <translation>Touchez à nouveau la photo pour élargir, ou touchez ici pour copier</translation>
-    </message>
-    <message>
         <source>Text</source>
         <translation>Texte</translation>
+    </message>
+    <message>
+        <source>Word</source>
+        <translation>Mot</translation>
     </message>
 </context>
 <context>

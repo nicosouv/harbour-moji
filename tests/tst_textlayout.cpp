@@ -71,6 +71,9 @@ private slots:
 
     void textJoinsLinesWithNewlineAndParagraphsWithBlankLine();
     void boxOfSelectionSpansItsWords();
+
+    void lineNumbersAreDistinctAndInReadingOrder();
+    void lineConfidenceAveragesOnlyThatLine();
 };
 
 void TestTextLayout::wordIndexAtFindsWordUnderPoint()
@@ -198,6 +201,27 @@ void TestTextLayout::boxOfSelectionSpansItsWords()
     const Selection selection = selectAt(sample(), QPoint(50, 10), Line);
     // "Invoice" 10..90 and "total" 100..150 on y 0..20.
     QCOMPARE(selection.box, QRect(10, 0, 140, 20));
+}
+
+void TestTextLayout::lineNumbersAreDistinctAndInReadingOrder()
+{
+    // Four lines across two blocks, each reported once, in the order they were
+    // read - this drives the overlay, so a duplicate would draw twice and a
+    // reorder would tint the wrong row.
+    const QVector<int> lines = sample().lineNumbers();
+    QCOMPARE(lines.size(), 4);
+    QCOMPARE(lines, QVector<int>() << 0 << 1 << 2 << 3);
+}
+
+void TestTextLayout::lineConfidenceAveragesOnlyThatLine()
+{
+    OcrResult result = sample();
+
+    // Every word in the fixture is 90; a line whose words differ must average
+    // only its own.
+    QCOMPARE(result.lineConfidence(0), 90.0f);
+    // A line that does not exist is 0, not a division by zero.
+    QCOMPARE(result.lineConfidence(99), 0.0f);
 }
 
 QTEST_APPLESS_MAIN(TestTextLayout)

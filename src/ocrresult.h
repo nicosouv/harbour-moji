@@ -64,6 +64,16 @@ public:
     QRect paragraphBox(int paragraph) const;
     QRect blockBox(int block) const;
 
+    // The distinct line numbers, in reading order. Used to draw where the text
+    // is without instantiating one item per word: a page can hold a couple of
+    // thousand words and only a few dozen lines, and on a phone that difference
+    // is the difference between a smooth overlay and a stuttering one.
+    QVector<int> lineNumbers() const;
+
+    // Mean confidence over one line, for the same reason: a page's weak spots are
+    // legible per line and meaningless per word.
+    float lineConfidence(int line) const;
+
     // Indices of the words in a group, in reading order.
     QVector<int> wordsInLine(int line) const;
     QVector<int> wordsInParagraph(int paragraph) const;

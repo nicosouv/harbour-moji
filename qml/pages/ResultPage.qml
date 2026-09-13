@@ -18,6 +18,15 @@ Page {
     property int currentScope: 0
     property var selection: ({ valid: false })
 
+    // Saying which unit is selected is what makes the second tap understandable.
+    // Without it the box just gets bigger and the user has to infer the rule.
+    function scopeName(scope) {
+        if (scope === ocr.scopeLine()) return qsTr("Line")
+        if (scope === ocr.scopeParagraph()) return qsTr("Paragraph")
+        if (scope === ocr.scopeBlock()) return qsTr("Block")
+        return qsTr("Word")
+    }
+
     allowedOrientations: defaultAllowedOrientations
 
     Component.onCompleted: {
@@ -95,6 +104,39 @@ Page {
                     // megapixel photo held at full resolution is ~48MB of pixels,
                     // which is how an image viewer gets itself killed on a phone.
                     sourceSize.width: page.width
+                }
+
+                // Where the text is. Without this the photo looks inert and
+                // nothing suggests it can be touched; with it, the page is
+                // visibly understood before anything is tapped.
+                //
+                // Per line, not per word: a page holds a couple of thousand words
+                // and a few dozen lines, and a Repeater over the former stutters.
+                Repeater {
+                    model: page.selection.valid === true ? [] : ocr.lines
+
+                    delegate: Rectangle {
+                        x: canvas.offsetX + modelData.x * canvas.ratio
+                        y: modelData.y * canvas.ratio
+                        width: modelData.width * canvas.ratio
+                        height: modelData.height * canvas.ratio
+                        radius: Tokens.hairline * 2
+
+                        // Weak lines are tinted, strong ones barely marked. This
+                        // is the confidence map: it points at the parts worth
+                        // reading twice without putting a number on anything.
+                        color: modelData.confidence < 70
+                               ? Theme.rgba(Theme.errorColor, 0.20)
+                               : Theme.rgba(Tokens.accentColor, 0.13)
+
+                        opacity: ocr.busy ? 0 : 1
+                        Behavior on opacity {
+                            NumberAnimation {
+                                duration: Tokens.durSlow
+                                easing.type: Tokens.easingType
+                            }
+                        }
+                    }
                 }
 
                 // The current selection, drawn over the photo in image
@@ -182,7 +224,9 @@ Page {
                 PanelRow {
                     width: parent.width
                     title: page.selection.text || ""
-                    detail: qsTr("Tap the photo again to widen, or tap here to copy")
+                    detail: page.currentScope === ocr.scopeBlock()
+                            ? qsTr("%1 — tap here to copy").arg(page.scopeName(page.currentScope))
+                            : qsTr("%1 — tap the photo again to widen, or tap here to copy").arg(page.scopeName(page.currentScope))
                     glyph: "\""
                     onClicked: {
                         Clipboard.text = page.selection.text
@@ -199,6 +243,16 @@ Page {
                 font.pixelSize: Theme.fontSizeExtraSmall
                 color: Tokens.secondaryColor
                 text: qsTr("Tap a word in the photo. Tap it again to take the whole line, then the paragraph.")
+            }
+
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                visible: !ocr.busy && ocr.wordCount === 0 && ocr.lastError === ""
+                wrapMode: Text.Wrap
+                font.pixelSize: Theme.fontSizeSmall
+                color: Tokens.secondaryColor
+                text: qsTr("No text found in this photo. More light and a closer frame usually fix it — or check the language in Settings.")
             }
 
             GroupPanel {

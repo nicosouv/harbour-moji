@@ -44,6 +44,12 @@ class OcrEngine : public QObject
     // than copying the wrong digits confidently.
     Q_PROPERTY(QVariantList fields READ fields NOTIFY resultChanged)
 
+    // One entry per recognised line: its box in the original photo's coordinates,
+    // and its mean confidence. The UI draws these faintly over the photo, which
+    // is what tells the user there is text there to tap before they have tapped
+    // anything - and, tinted by confidence, which parts to look at twice.
+    Q_PROPERTY(QVariantList lines READ lines NOTIFY resultChanged)
+
 public:
     explicit OcrEngine(const QString &tessdataPath, QObject *parent = nullptr);
     ~OcrEngine() override;
@@ -55,6 +61,7 @@ public:
     QSize imageSize() const { return m_result.imageSize(); }
     QString lastError() const { return m_lastError; }
     QVariantList fields() const;
+    QVariantList lines() const;
 
     // languages is Tesseract's own spelling: "fra" or "fra+eng".
     Q_INVOKABLE void recognise(const QUrl &imageUrl, const QString &languages);

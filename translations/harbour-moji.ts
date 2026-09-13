@@ -132,11 +132,23 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>%1 — tap here to copy</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>%1 — tap the photo again to widen, or tap here to copy</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>All text</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <source>All text copied</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Block</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -156,7 +168,19 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>Line</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Low confidence (%1%). Try again with more light, or fill the frame with the page.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>No text found in this photo. More light and a closer frame usually fix it — or check the language in Settings.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Paragraph</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -176,11 +200,11 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Tap the photo again to widen, or tap here to copy</source>
+        <source>Text</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Text</source>
+        <source>Word</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

@@ -67,6 +67,34 @@ QVector<int> OcrResult::wordsInLine(int line) const { return indicesOf(&OcrWord:
 QVector<int> OcrResult::wordsInParagraph(int paragraph) const { return indicesOf(&OcrWord::paragraph, paragraph); }
 QVector<int> OcrResult::wordsInBlock(int block) const { return indicesOf(&OcrWord::block, block); }
 
+QVector<int> OcrResult::lineNumbers() const
+{
+    QVector<int> numbers;
+    for (const OcrWord &word : m_words) {
+        // Reading order, and words arrive in it, so the last one seen is the only
+        // one worth comparing against - no set, no sort.
+        if (numbers.isEmpty() || numbers.last() != word.line) {
+            if (!numbers.contains(word.line)) {
+                numbers.append(word.line);
+            }
+        }
+    }
+    return numbers;
+}
+
+float OcrResult::lineConfidence(int line) const
+{
+    float total = 0.0f;
+    int count = 0;
+    for (const OcrWord &word : m_words) {
+        if (word.line == line) {
+            total += word.confidence;
+            ++count;
+        }
+    }
+    return count > 0 ? total / count : 0.0f;
+}
+
 float OcrResult::meanConfidence() const
 {
     if (m_words.isEmpty()) {

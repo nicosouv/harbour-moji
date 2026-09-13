@@ -43,143 +43,185 @@ Column {
     property bool roundTop: false
     property bool roundBottom: false
 
-    MouseArea {
-        id: header
-
+    Loader {
         width: root.width
-        height: Theme.itemSizeSmall
+        sourceComponent: Tokens.ambient ? nativeVariant : mochiVariant
+    }
 
-        onClicked: root.expanded = !root.expanded
+    Component {
+        id: nativeVariant
 
-        PanelBox {
-            anchors.fill: parent
-            roundTop: root.roundTop
-            roundBottom: root.roundBottom && !root.expanded
-            radius: Tokens.panelRadius
-            color: Tokens.pressedColor
-            visible: header.pressed
-        }
+        // Silica's own, not a lookalike. A ComboBox opens a ContextMenu that
+        // expands in place inside the list - the same idea as the Drawer below,
+        // which is why swapping between the two is not jarring - and Sailfish
+        // users already know where its options appear.
+        ComboBox {
+            width: root.width
+            label: root.label
+            currentIndex: root.currentIndex
 
-        Label {
-            anchors {
-                left: parent.left
-                leftMargin: Theme.paddingLarge
-                verticalCenter: parent.verticalCenter
-            }
-            text: root.label
-            font.pixelSize: Theme.fontSizeSmall
-            color: header.pressed ? Tokens.accentColor : Tokens.primaryColor
-        }
-
-        Row {
-            anchors {
-                right: parent.right
-                rightMargin: Theme.paddingLarge
-                verticalCenter: parent.verticalCenter
-            }
-            spacing: Theme.paddingMedium
-
-            Label {
-                anchors.verticalCenter: parent.verticalCenter
-                text: root.currentText
-                font.pixelSize: Theme.fontSizeSmall
-                color: Tokens.accentColor
-            }
-
-            // A chevron built as an equal-armed L rotated 45 degrees, which
-            // points down; rotating it to 135 points it up. Animating the
-            // rotation rather than swapping two glyphs is what makes the
-            // control feel like it opened rather than changed.
-            Item {
-                id: chevron
-
-                anchors.verticalCenter: parent.verticalCenter
-                width: Theme.fontSizeSmall * 0.5
-                height: width
-
-                readonly property real thickness: Math.max(Tokens.hairline,
-                                                           width * 0.18)
-
-                rotation: root.expanded ? 135 : 45
-
-                Behavior on rotation {
-                    NumberAnimation {
-                        duration: Tokens.durBase
-                        easing.type: Tokens.easingType
-                    }
+            menu: ContextMenu {
+                Repeater {
+                    model: root.options
+                    MenuItem { text: modelData }
                 }
+            }
 
-                Rectangle {
-                    x: 0
-                    y: 0
-                    width: chevron.thickness
-                    height: parent.height
-                    color: Tokens.accentColor
-                }
-
-                Rectangle {
-                    x: 0
-                    y: parent.height - chevron.thickness
-                    width: parent.width
-                    height: chevron.thickness
-                    color: Tokens.accentColor
+            // Guarded: the binding above sets currentIndex from root, and writing
+            // straight back would have the two chasing each other.
+            onCurrentIndexChanged: {
+                if (currentIndex !== root.currentIndex) {
+                    root.currentIndex = currentIndex
                 }
             }
         }
     }
 
-    Drawer {
-        width: root.width
-        open: root.expanded
+    Component {
+        id: mochiVariant
 
-        Repeater {
-            model: root.options
+        Column {
+            width: root.width
 
-            delegate: MouseArea {
-                id: option
+        MouseArea {
+            id: header
 
-                width: root.width
-                height: Theme.itemSizeSmall
+            width: root.width
+            height: Theme.itemSizeSmall
 
-                // modelData, not model: the model is an array of strings, so
-                // each delegate gets the string itself and there are no roles.
-                readonly property string optionText: modelData
-                readonly property bool selected: index === root.currentIndex
-                readonly property bool lastOption: index === root.options.length - 1
+            onClicked: root.expanded = !root.expanded
 
-                onClicked: {
-                    root.currentIndex = index
-                    root.expanded = false
+            PanelBox {
+                anchors.fill: parent
+                roundTop: root.roundTop
+                roundBottom: root.roundBottom && !root.expanded
+                radius: Tokens.panelRadius
+                color: Tokens.pressedColor
+                visible: header.pressed
+            }
+
+            Label {
+                anchors {
+                    left: parent.left
+                    leftMargin: Theme.paddingLarge
+                    verticalCenter: parent.verticalCenter
                 }
+                text: root.label
+                font.pixelSize: Theme.fontSizeSmall
+                color: header.pressed ? Tokens.accentColor : Tokens.primaryColor
+            }
 
-                PanelBox {
-                    anchors.fill: parent
-                    roundBottom: root.roundBottom && option.lastOption
-                    radius: Tokens.panelRadius
-                    color: Tokens.selectionColor
-                    visible: option.selected
+            Row {
+                anchors {
+                    right: parent.right
+                    rightMargin: Theme.paddingLarge
+                    verticalCenter: parent.verticalCenter
                 }
-
-                PanelBox {
-                    anchors.fill: parent
-                    roundBottom: root.roundBottom && option.lastOption
-                    radius: Tokens.panelRadius
-                    color: Tokens.pressedColor
-                    visible: option.pressed
-                }
+                spacing: Theme.paddingMedium
 
                 Label {
-                    anchors {
-                        left: parent.left
-                        leftMargin: Theme.paddingLarge * 2
-                        verticalCenter: parent.verticalCenter
-                    }
-                    text: option.optionText
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: root.currentText
                     font.pixelSize: Theme.fontSizeSmall
-                    color: option.selected ? Tokens.accentColor
-                                           : Tokens.primaryColor
+                    color: Tokens.accentColor
+                }
+
+                // A chevron built as an equal-armed L rotated 45 degrees, which
+                // points down; rotating it to 135 points it up. Animating the
+                // rotation rather than swapping two glyphs is what makes the
+                // control feel like it opened rather than changed.
+                Item {
+                    id: chevron
+
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: Theme.fontSizeSmall * 0.5
+                    height: width
+
+                    readonly property real thickness: Math.max(Tokens.hairline,
+                                                               width * 0.18)
+
+                    rotation: root.expanded ? 135 : 45
+
+                    Behavior on rotation {
+                        NumberAnimation {
+                            duration: Tokens.durBase
+                            easing.type: Tokens.easingType
+                        }
+                    }
+
+                    Rectangle {
+                        x: 0
+                        y: 0
+                        width: chevron.thickness
+                        height: parent.height
+                        color: Tokens.accentColor
+                    }
+
+                    Rectangle {
+                        x: 0
+                        y: parent.height - chevron.thickness
+                        width: parent.width
+                        height: chevron.thickness
+                        color: Tokens.accentColor
+                    }
                 }
             }
+        }
+
+        Drawer {
+            width: root.width
+            open: root.expanded
+
+            Repeater {
+                model: root.options
+
+                delegate: MouseArea {
+                    id: option
+
+                    width: root.width
+                    height: Theme.itemSizeSmall
+
+                    // modelData, not model: the model is an array of strings, so
+                    // each delegate gets the string itself and there are no roles.
+                    readonly property string optionText: modelData
+                    readonly property bool selected: index === root.currentIndex
+                    readonly property bool lastOption: index === root.options.length - 1
+
+                    onClicked: {
+                        root.currentIndex = index
+                        root.expanded = false
+                    }
+
+                    PanelBox {
+                        anchors.fill: parent
+                        roundBottom: root.roundBottom && option.lastOption
+                        radius: Tokens.panelRadius
+                        color: Tokens.selectionColor
+                        visible: option.selected
+                    }
+
+                    PanelBox {
+                        anchors.fill: parent
+                        roundBottom: root.roundBottom && option.lastOption
+                        radius: Tokens.panelRadius
+                        color: Tokens.pressedColor
+                        visible: option.pressed
+                    }
+
+                    Label {
+                        anchors {
+                            left: parent.left
+                            leftMargin: Theme.paddingLarge * 2
+                            verticalCenter: parent.verticalCenter
+                        }
+                        text: option.optionText
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: option.selected ? Tokens.accentColor
+                                               : Tokens.primaryColor
+                    }
+                }
+            }
+        }
         }
     }
 }
