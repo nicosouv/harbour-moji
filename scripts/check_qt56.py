@@ -45,6 +45,22 @@ def strip_comments(line):
     return re.sub(r"//.*$", "", line)
 
 
+# qreal is double on aarch64 and float on armv7hl. qMax/qMin/qBound deduce one
+# type from their arguments, so a bare floating-point literal beside a qreal
+# compiles on 64-bit and fails on 32-bit - and every lane that builds this off the
+# device is 64-bit.
+MIXED_QREAL = re.compile(r"\bq(?:Max|Min|Bound)\s*\([^;]*?[0-9]+\.[0-9]+")
+
+
+def check_mixed_qreal(path):
+    findings = []
+    for number, raw in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        line = strip_comments(raw)
+        if MIXED_QREAL.search(line) and "<qreal>" not in line and "<double>" not in line:
+            findings.append((number, line.strip()))
+    return findings
+
+
 def main():
     failures = 0
     checked = 0
@@ -63,6 +79,14 @@ def main():
                     print(f"    {line.strip()}")
                     print(f"    use {instead}")
                     failures += 1
+
+        for number, snippet in check_mixed_qreal(path):
+            rel = path.relative_to(ROOT)
+            print(f"{rel}:{number}: a floating-point literal beside a qreal")
+            print(f"    {snippet}")
+            print("    qreal is float on armv7hl and double on aarch64; say "
+                  "qMax<qreal>(...)")
+            failures += 1
 
     print(f"\nchecked {checked} C++ files, {failures} problem(s)")
     return 1 if failures else 0

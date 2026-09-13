@@ -146,6 +146,11 @@ slogan — as a build rule:
 - `TessBaseAPI` is not thread-safe and initialisation is slow. One instance,
   owned by the engine, driven from a worker thread via `QtConcurrent`; never one
   per request.
+- **`qreal` is `double` on aarch64 and `float` on armv7hl.** So `qMax(1.0, x)`
+  where x is a qreal deduces two different types on 32-bit and refuses to compile
+  there - while building perfectly on every lane that checks this code, all of
+  which are 64-bit. Say `qMax<qreal>(...)`. `scripts/check_qt56.py` catches the
+  other spelling.
 - `%{_libdir}` is `/usr/lib` on armv7hl and `/usr/lib64` on aarch64, so anything
   installed there goes through `CMAKE_INSTALL_LIBDIR`, never a hardcoded `lib`.
   Getting it wrong builds cleanly on both and then fails packaging on aarch64

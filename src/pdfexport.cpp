@@ -34,7 +34,10 @@ qreal fontSizeForBox(const QRect &box, qreal scale)
     // height directly makes the invisible text noticeably taller than the word,
     // and a reader's selection then spills into the lines around it.
     const qreal height = box.height() * scale * 0.8;
-    return qMax(1.0, height);
+    // qreal is float on armv7hl and double on aarch64, so a bare
+    // 1.0 here is a different type on each and qMax refuses to
+    // deduce one. Naming the type builds on both.
+    return qMax<qreal>(1.0, height);
 }
 
 QPointF baselineFor(const QRect &box, qreal scale, const QPointF &origin)
