@@ -83,15 +83,33 @@ Page {
 
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
-                height: photo.paintedHeight > 0 ? photo.paintedHeight : width
 
-                // How many screen pixels one image pixel occupies. Everything
-                // below converts through this and nothing hardcodes a size.
-                readonly property real ratio:
-                    (ocr.imageSize.width > 0 && photo.paintedWidth > 0)
-                        ? photo.paintedWidth / ocr.imageSize.width : 1
+                // Height from the image's own proportions, never from
+                // paintedHeight.
+                //
+                // paintedHeight is what the Image ended up drawing, which depends
+                // on the Image's height, which - the Image being anchored to fill
+                // this Item - depends on this height. Qt calls that a binding loop
+                // and says so once; what it does not say is that it then keeps
+                // re-evaluating the layout, which is what makes the page look
+                // frozen rather than merely wrong.
+                //
+                // implicitWidth/implicitHeight are the loaded image's own
+                // dimensions and are outputs of the loader, so nothing here feeds
+                // back into them. sourceSize would do as well once loaded, but it
+                // reports a zero height while only its width has been set, and a
+                // zero aspect collapses the photo to nothing on the first frame.
+                readonly property real aspect: photo.implicitWidth > 0
+                        ? photo.implicitHeight / photo.implicitWidth : 1
 
-                readonly property real offsetX: (width - photo.paintedWidth) / 2
+                height: width * aspect
+
+                // The image now fills the width exactly, so one image pixel is
+                // this many screen pixels and there is no letterboxing to offset.
+                readonly property real ratio: ocr.imageSize.width > 0
+                        ? width / ocr.imageSize.width : 1
+
+                readonly property real offsetX: 0
 
                 Image {
                     id: photo

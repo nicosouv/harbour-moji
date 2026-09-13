@@ -152,11 +152,39 @@ def check_richtext(path, lines):
     return findings
 
 
+# Sizing a parent from what a child ended up painting.
+SIZE_BINDING = re.compile(r"^\s*(?:implicit)?(?:width|height)\s*:")
+PAINTED = re.compile(r"\bpainted(?:Width|Height)\b")
+
+
+def check_painted_size_binding(path, lines):
+    """A width or height bound to a child's paintedWidth/paintedHeight.
+
+    An Image anchored to fill its parent takes its size from that parent, so
+    its paintedWidth and paintedHeight are downstream of it. Sizing the parent
+    from them closes the circle. Qt prints "Binding loop detected" once and
+    then carries on re-evaluating the layout, which on a device reads as the
+    page having frozen rather than as anything being wrong - so the warning
+    scrolls past in a log nobody is reading and the bug ships.
+
+    Take the proportions from the image instead: implicitWidth and
+    implicitHeight are what the loader decoded and depend on nothing in the
+    layout.
+    """
+    findings = []
+    for number, raw in enumerate(lines, start=1):
+        line = strip_comments(raw)
+        if SIZE_BINDING.search(line) and PAINTED.search(line):
+            findings.append((number, line.strip()))
+    return findings
+
+
 CHECKS = [
     ("model get() inside a property binding", check_get_in_binding),
     ("property shadows one Item already has", check_shadowed_item_property),
     ("component name shadows a platform type", check_shadowed_platform_type),
     ("recognised text rendered as rich text", check_richtext),
+    ("size bound to a child's painted size", check_painted_size_binding),
 ]
 
 

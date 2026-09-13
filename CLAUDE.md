@@ -75,6 +75,16 @@ slogan — as a build rule:
   yields word, line, paragraph and block boxes with a confidence each. Tapping a
   word and growing the selection to its real block is only possible because that
   structure exists — a detector/recogniser pair returns strings and nothing else.
+- **A binding loop does not look like a bug, it looks like a hang.** Qt prints
+  "Binding loop detected" once and then keeps re-evaluating the layout, so on a
+  device the page appears frozen and the log line scrolls past unread. The one
+  that shipped sized an Item from a child Image's `paintedHeight` while that
+  Image was anchored to fill the Item. Take proportions from `implicitWidth` /
+  `implicitHeight`, which are what the loader decoded and depend on nothing in the
+  layout; `scripts/check_qml.py` now fails the build on the other spelling.
+  Worth knowing: a headless harness does **not** reliably reproduce it, because Qt
+  reports re-entrancy rather than non-convergence and the evaluation order
+  differs - which is why this is a static check and not a test.
 - **Two Tesseract initialisation traps, both of which look like something else.**
   `Init()`'s datapath is the *parent* of the tessdata directory - it appends
   `tessdata/` itself - so handing it the real directory makes it search
