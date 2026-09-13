@@ -31,7 +31,7 @@ Page {
 
     Component.onCompleted: {
         if (imageUrl != "") {
-            ocr.recognise(imageUrl, settings.tesseractLanguages)
+            ocr.recognise(imageUrl, settings.tesseractLanguages, settings.autoRotate)
         }
     }
 
@@ -59,7 +59,8 @@ Page {
             MenuItem {
                 text: qsTr("Read again")
                 enabled: !ocr.busy
-                onClicked: ocr.recognise(page.imageUrl, settings.tesseractLanguages)
+                onClicked: ocr.recognise(page.imageUrl, settings.tesseractLanguages,
+                                         settings.autoRotate)
             }
         }
 
@@ -118,6 +119,13 @@ Page {
                     source: page.imageUrl
                     fillMode: Image.PreserveAspectFit
                     asynchronous: true
+
+                    // The camera tags a portrait photo rather than rotating its
+                    // pixels, and QML ignores that tag unless asked. Without this
+                    // the preview lies on its side while OcrEngine - which does
+                    // apply the tag - reports boxes for the upright image, so
+                    // every box lands in the wrong place.
+                    autoTransform: true
                     // Decoded at the size it is drawn, not the camera's: a 12
                     // megapixel photo held at full resolution is ~48MB of pixels,
                     // which is how an image viewer gets itself killed on a phone.
@@ -215,6 +223,10 @@ Page {
                 anchors.horizontalCenter: parent.horizontalCenter
                 running: ocr.busy
                 size: BusyIndicatorSize.Large
+                // A Column still reserves space for an item that is merely not
+                // running, which leaves a hole the height of the indicator under
+                // the photo for the whole time the result is on screen.
+                visible: ocr.busy
             }
 
             // Mean confidence, stated plainly rather than as a bar. Below about

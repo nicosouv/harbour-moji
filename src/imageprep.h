@@ -3,6 +3,7 @@
 
 #include <QImage>
 #include <QRect>
+#include <QString>
 
 // Getting a camera photo into the shape Tesseract wants, and keeping the way
 // back.
@@ -35,6 +36,31 @@ struct Prepared
 // it better, and on a phone it is also how the process gets itself killed - 12MP
 // held as 8-bit grey is 12MB, but as the 32-bit ARGB QImage decodes to first, 48MB.
 const int MaxEdge = 2400;
+
+// Loads a file the way the photographer saw it.
+//
+// A phone camera does not rotate the pixels when the phone is held upright: it
+// writes the sensor's landscape frame and tags it with an EXIF orientation. Qt
+// does not apply that tag unless asked - QImage(path) and QML's Image both ignore
+// it by default - so a portrait photo arrives lying on its side, and both the
+// preview and the recogniser see it that way.
+//
+// Returns a null image if the file cannot be read.
+QImage loadUpright(const QString &path);
+
+// The image turned by a multiple of 90 degrees, for trying the page the other way
+// up. Any other angle returns the image unchanged.
+QImage rotated(const QImage &image, int degrees);
+
+// A box measured on an image that was rotated by `degrees`, expressed back in the
+// coordinates of the image before that rotation.
+//
+// This is the part that silently ruins an overlay: recognise a rotated copy, draw
+// the boxes it reports on the upright photo, and every one of them is in the
+// wrong place - plausibly enough to look like a calibration problem rather than a
+// missing transform. `rotatedSize` is the size of the image the box was measured
+// on.
+QRect unrotateRect(const QRect &box, int degrees, const QSize &rotatedSize);
 
 // Greyscale, no larger than maxEdge on its long side.
 //

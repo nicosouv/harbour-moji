@@ -83,6 +83,17 @@ public:
     // equally likely to be the one that is wrong.
     float meanConfidence() const;
 
+    // How well this reading went, as one number, for choosing between the same
+    // page recognised at different rotations.
+    //
+    // Word count times mean confidence, and both halves are needed. Confidence
+    // alone picks the pass that found three letters it was sure of over the one
+    // that found four hundred words it was slightly less sure of. Word count
+    // alone picks the pass that found hundreds of pieces of noise. A page read
+    // the right way up beats one read sideways on both counts at once, which is
+    // what makes the product a usable signal rather than a clever one.
+    float readingScore() const;
+
 private:
     QRect boxOf(int OcrWord::*member, int value) const;
     QVector<int> indicesOf(int OcrWord::*member, int value) const;

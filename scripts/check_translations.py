@@ -42,8 +42,14 @@ LITERALS = r'((?:"(?:[^"\\]|\\.)*"\s*)+)'
 CPP_TR = re.compile(r"\btr\(\s*" + LITERALS, re.S)
 CPP_TRANSLATE = re.compile(
     r'QCoreApplication::translate\(\s*"(\w+)"\s*,\s*' + LITERALS, re.S)
-# "void MatrixClient::login(" - what tr() takes its context from
-CPP_METHOD = re.compile(r"^[\w:<>,\s\*&]*?\b(\w+)::\w+\s*\(", re.M)
+# "void MatrixClient::login(" - what tr() takes its context from.
+#
+# Anchored to column zero, which is where a definition starts and where a *call*
+# never does. Without that, an indented "ImagePrep::unrotateRect(...)" earlier in
+# a function counts as entering class ImagePrep, and every tr() after it is filed
+# under a context Qt will never look in - so the string is translated in the
+# catalogue and still comes out English on the device.
+CPP_METHOD = re.compile(r"^(?!\s)[\w:<>,\s\*&]*?\b(\w+)::\w+\s*\(", re.M)
 ONE_LITERAL = re.compile(r'"((?:[^"\\]|\\.)*)"')
 
 

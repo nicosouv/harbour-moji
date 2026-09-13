@@ -65,7 +65,10 @@ public:
     QVariantList lines() const;
 
     // languages is Tesseract's own spelling: "fra" or "fra+eng".
-    Q_INVOKABLE void recognise(const QUrl &imageUrl, const QString &languages);
+    // autoRotate tries the page at 90 and 270 degrees as well, and keeps
+    // whichever reading scored best. See Settings::autoRotate.
+    Q_INVOKABLE void recognise(const QUrl &imageUrl, const QString &languages,
+                               bool autoRotate = true);
 
     // Tap-to-extract. Point is in the coordinates of the original image, scope is
     // a TextLayout::Scope. Returns { valid, text, x, y, width, height }, empty
@@ -103,7 +106,8 @@ private:
     };
 
     // Runs on the worker thread.
-    Outcome run(const QString &path, const QString &languages);
+    Outcome run(const QString &path, const QString &languages,
+                bool autoRotate);
 
     void setBusy(bool busy);
     void setLastError(const QString &error);

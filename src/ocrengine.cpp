@@ -43,7 +43,8 @@ OcrEngine::~OcrEngine()
     }
 }
 
-void OcrEngine::recognise(const QUrl &imageUrl, const QString &languages)
+void OcrEngine::recognise(const QUrl &imageUrl, const QString &languages,
+                          bool autoRotate)
 {
     if (m_busy) {
         qCWarning(lcMoji) << "already recognising; ignoring" << imageUrl;
@@ -61,16 +62,20 @@ void OcrEngine::recognise(const QUrl &imageUrl, const QString &languages)
     setLastError(QString());
     setBusy(true);
 
-    m_watcher.setFuture(QtConcurrent::run(this, &OcrEngine::run, path, languages));
+    m_watcher.setFuture(QtConcurrent::run(this, &OcrEngine::run, path, languages,
+                                          autoRotate));
 }
 
-OcrEngine::Outcome OcrEngine::run(const QString &path, const QString &languages)
+OcrEngine::Outcome OcrEngine::run(const QString &path, const QString &languages,
+                                 bool autoRotate)
 {
     Outcome outcome;
 
     qCDebug(lcMoji) << "reading" << path << "with" << languages;
 
-    QImage source(path);
+    // loadUpright, not QImage(path): the camera writes a portrait photo as a
+    // landscape frame plus an EXIF tag, and Qt ignores that tag unless asked.
+    QImage source = ImagePrep::loadUpright(path);
     if (source.isNull()) {
         outcome.error = tr("That file is not an image this device can read.");
         return outcome;
@@ -139,89 +144,141 @@ OcrEngine::Outcome OcrEngine::run(const QString &path, const QString &languages)
         qCDebug(lcMoji) << "tesseract ready";
     }
 
-    // Raw pixels straight from the QImage. Leptonica never reads the file, which
-    // is why it is built without any image codecs: Qt already decoded it.
-    m_api->SetImage(prepared.image.constBits(),
-                    prepared.image.width(),
-                    prepared.image.height(),
-                    1,  // Format_Grayscale8: one byte per pixel
-                    static_cast<int>(prepared.image.bytesPerLine()));
+    // Recognise the page each way up and keep the best reading.
+    //
+    // EXIF says how the phone was held; it says nothing about how the text sits
+    // on the page, and a table or a spine caption is often turned ninety degrees
+    // against the paper. Tesseract's own OSD would answer this in one pass, but it
+    // needs a 10MB model and it is not clear it survives the --disable-legacy this
+    // is built with - so the answer is taken from the recogniser itself, which is
+    // the thing that actually knows whether it could read what it was shown.
+    //
+    // The extra passes are only paid for when the first one comes out badly. A
+    // page the right way up is usually obvious immediately.
+    QVector<int> angles;
+    angles << 0;
+    if (autoRotate) {
+        angles << 90 << 270;
+    }
 
-    qCDebug(lcMoji) << "image set, recognising";
+    OcrResult best;
+    int bestAngle = 0;
+    bool haveAny = false;
 
-    if (m_api->Recognize(nullptr) != 0) {
+    for (int angle : angles) {
+        const QImage grey = ImagePrep::rotated(prepared.image, angle);
+
+        // Raw pixels straight from the QImage. Leptonica never reads the file,
+        // which is why it is built without any image codecs: Qt already decoded it.
+        m_api->SetImage(grey.constBits(),
+                        grey.width(),
+                        grey.height(),
+                        1,  // Format_Grayscale8: one byte per pixel
+                        static_cast<int>(grey.bytesPerLine()));
+
+        if (m_api->Recognize(nullptr) != 0) {
+            qCDebug(lcMoji) << "  angle" << angle << "could not be recognised";
+            m_api->Clear();
+            continue;
+        }
+
+        tesseract::ResultIterator *it = m_api->GetIterator();
+        if (!it) {
+            m_api->Clear();
+            continue;
+        }
+
+        OcrResult attempt;
+        attempt.setImageSize(source.size());
+        attempt.setOrientation(angle);
+
+        // Tesseract reports no index for a line, paragraph or block - only
+        // whether the word starts a new one. Counting the transitions is how the
+        // flat list in OcrResult gets its hierarchy, and it is also why the order
+        // words arrive in has to be preserved exactly.
+        int line = -1;
+        int paragraph = -1;
+        int block = -1;
+
+        const tesseract::PageIteratorLevel level = tesseract::RIL_WORD;
+        do {
+            if (it->IsAtBeginningOf(tesseract::RIL_BLOCK)) {
+                ++block;
+            }
+            if (it->IsAtBeginningOf(tesseract::RIL_PARA)) {
+                ++paragraph;
+            }
+            if (it->IsAtBeginningOf(tesseract::RIL_TEXTLINE)) {
+                ++line;
+            }
+
+            char *word = it->GetUTF8Text(level);
+            if (!word) {
+                continue;
+            }
+
+            const QString text = QString::fromUtf8(word).trimmed();
+            delete[] word;
+
+            if (text.isEmpty()) {
+                continue;
+            }
+
+            int left = 0, top = 0, right = 0, bottom = 0;
+            if (!it->BoundingBox(level, &left, &top, &right, &bottom)) {
+                continue;
+            }
+
+            OcrWord entry;
+            entry.text = text;
+
+            // Two transforms back, in order: out of the rotation that was applied
+            // for this pass, then out of the downscale. Skip either and the
+            // overlay lands somewhere plausible but wrong.
+            const QRect inRotated(QPoint(left, top), QPoint(right - 1, bottom - 1));
+            const QRect inPrepared =
+                ImagePrep::unrotateRect(inRotated, angle, grey.size());
+            entry.box = ImagePrep::toSourceRect(inPrepared, prepared.scale);
+
+            entry.confidence = it->Confidence(level);
+            entry.line = qMax(0, line);
+            entry.paragraph = qMax(0, paragraph);
+            entry.block = qMax(0, block);
+
+            attempt.append(entry);
+        } while (it->Next(level));
+
+        delete it;
+
+        // Clearing releases Tesseract's hold on the pixel buffer, which belongs
+        // to a QImage that is about to be replaced by the next angle's.
+        m_api->Clear();
+
+        qCDebug(lcMoji) << "  angle" << angle << ":" << attempt.count() << "words,"
+                        << "confidence" << attempt.meanConfidence()
+                        << "score" << attempt.readingScore();
+
+        if (!haveAny || attempt.readingScore() > best.readingScore()) {
+            best = attempt;
+            bestAngle = angle;
+            haveAny = true;
+        }
+
+        // Good enough on the first try: a page read the right way up is not
+        // marginal, and two more passes on a large photo is seconds of the user
+        // waiting for a result that will not change.
+        if (angle == 0 && attempt.count() >= 8 && attempt.meanConfidence() >= 75.0f) {
+            break;
+        }
+    }
+
+    if (!haveAny) {
         outcome.error = tr("Nothing could be read from that image.");
         return outcome;
     }
 
-    qCDebug(lcMoji) << "recognised, walking the result";
-
-    tesseract::ResultIterator *it = m_api->GetIterator();
-    if (!it) {
-        outcome.error = tr("Nothing could be read from that image.");
-        return outcome;
-    }
-
-    outcome.result.setImageSize(source.size());
-
-    // Tesseract reports no index for a line, paragraph or block - only whether
-    // the word starts a new one. Counting the transitions is how the flat list in
-    // OcrResult gets its hierarchy, and it is also why the order words arrive in
-    // has to be preserved exactly.
-    int line = -1;
-    int paragraph = -1;
-    int block = -1;
-
-    const tesseract::PageIteratorLevel level = tesseract::RIL_WORD;
-    do {
-        if (it->IsAtBeginningOf(tesseract::RIL_BLOCK)) {
-            ++block;
-        }
-        if (it->IsAtBeginningOf(tesseract::RIL_PARA)) {
-            ++paragraph;
-        }
-        if (it->IsAtBeginningOf(tesseract::RIL_TEXTLINE)) {
-            ++line;
-        }
-
-        char *word = it->GetUTF8Text(level);
-        if (!word) {
-            continue;
-        }
-
-        const QString text = QString::fromUtf8(word).trimmed();
-        delete[] word;
-
-        if (text.isEmpty()) {
-            continue;
-        }
-
-        int left = 0, top = 0, right = 0, bottom = 0;
-        if (!it->BoundingBox(level, &left, &top, &right, &bottom)) {
-            continue;
-        }
-
-        OcrWord entry;
-        entry.text = text;
-        // Back into the original photo's coordinates, so an overlay drawn from
-        // these lands on the picture the user is looking at rather than on the
-        // scaled copy they never see.
-        entry.box = ImagePrep::toSourceRect(
-            QRect(QPoint(left, top), QPoint(right - 1, bottom - 1)), prepared.scale);
-        entry.confidence = it->Confidence(level);
-        entry.line = qMax(0, line);
-        entry.paragraph = qMax(0, paragraph);
-        entry.block = qMax(0, block);
-
-        outcome.result.append(entry);
-    } while (it->Next(level));
-
-    delete it;
-
-    // Clearing releases the pixel buffer's hold on the prepared image, which is
-    // about to go out of scope anyway - but Tesseract keeps the pointer, and a
-    // later call would otherwise read freed memory.
-    m_api->Clear();
+    qCDebug(lcMoji) << "best reading at" << bestAngle << "degrees";
+    outcome.result = best;
 
     return outcome;
 }

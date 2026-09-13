@@ -75,6 +75,17 @@ slogan — as a build rule:
   yields word, line, paragraph and block boxes with a confidence each. Tapping a
   word and growing the selection to its real block is only possible because that
   structure exists — a detector/recogniser pair returns strings and nothing else.
+- **EXIF orientation is not applied by anything, by default.** A phone writes a
+  portrait photo as the sensor's landscape frame plus a tag; `QImage(path)` ignores
+  the tag, and so does QML's `Image` unless `autoTransform: true`. Both sides have
+  to agree, or the preview is sideways relative to the boxes drawn on it.
+  `ImagePrep::loadUpright()` is the only way a photo should be read here.
+- **EXIF says how the phone was held, not how the text sits on the page.** A table
+  or a spine caption is often turned against the paper, so recognition runs at 0,
+  90 and 270 and keeps the best `readingScore()` - word count times mean
+  confidence, because confidence alone prefers three certain letters to four
+  hundred good words. Tesseract's OSD would answer in one pass but wants a 10MB
+  model and may not survive `--disable-legacy`.
 - **A binding loop does not look like a bug, it looks like a hang.** Qt prints
   "Binding loop detected" once and then keeps re-evaluating the layout, so on a
   device the page appears frozen and the log line scrolls past unread. The one

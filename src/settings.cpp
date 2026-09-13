@@ -57,10 +57,25 @@ QStringList Settings::ocrLanguages() const
 {
     const QStringList stored =
         m_settings.value(QLatin1String(kLanguagesKey)).toStringList();
-    // English by default rather than the interface language: it is the one set
-    // that is useful for the numbers, codes and Latin words that turn up in
-    // documents of every language.
-    return stored.isEmpty() ? QStringList { QStringLiteral("eng") } : stored;
+    if (!stored.isEmpty()) {
+        return stored;
+    }
+
+    // Never chosen, so guess from the phone's own language: someone reading a
+    // French page on a French phone should not have to find a setting first, and
+    // defaulting to English made every accented word a small error.
+    //
+    // Matched through QLocale rather than a table of codes - the same trick
+    // languageName() uses - so this keeps working for any language pack installed
+    // later without being taught about it.
+    const QLocale::Language systemLanguage = QLocale::system().language();
+    for (const QString &code : m_installedLanguages) {
+        if (QLocale(code).language() == systemLanguage) {
+            return QStringList { code };
+        }
+    }
+
+    return QStringList { QStringLiteral("eng") };
 }
 
 void Settings::setOcrLanguages(const QStringList &languages)

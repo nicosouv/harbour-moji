@@ -107,3 +107,8 @@ float OcrResult::meanConfidence() const
     }
     return total / m_words.size();
 }
+
+float OcrResult::readingScore() const
+{
+    return m_words.size() * meanConfidence();
+}

@@ -1,6 +1,60 @@
 #include "imageprep.h"
 
+#include <QImageReader>
+#include <QTransform>
+
 namespace ImagePrep {
+
+QImage loadUpright(const QString &path)
+{
+    QImageReader reader(path);
+    // The whole point. Without it a portrait photo comes back landscape, because
+    // the camera stored it landscape and only tagged it.
+    reader.setAutoTransform(true);
+    return reader.read();
+}
+
+QImage rotated(const QImage &image, int degrees)
+{
+    const int turns = ((degrees % 360) + 360) % 360;
+    if (turns == 0 || image.isNull()) {
+        return image;
+    }
+    if (turns != 90 && turns != 180 && turns != 270) {
+        return image;
+    }
+    return image.transformed(QTransform().rotate(turns), Qt::SmoothTransformation);
+}
+
+QRect unrotateRect(const QRect &box, int degrees, const QSize &rotatedSize)
+{
+    const int turns = ((degrees % 360) + 360) % 360;
+    if (turns == 0) {
+        return box;
+    }
+
+    const int rw = rotatedSize.width();
+    const int rh = rotatedSize.height();
+
+    // Worked in edges, and stated per case rather than through a QTransform: the
+    // inverse of a 90-degree turn is easy to write and very easy to get subtly
+    // backwards, and a test can only pin it if it is written out.
+    switch (turns) {
+    case 90:
+        // The original was turned +90 (clockwise) to make the rotated image, so
+        // the original's width is the rotated height.
+        return QRect(box.y(), rw - box.x() - box.width(),
+                     box.height(), box.width());
+    case 180:
+        return QRect(rw - box.x() - box.width(), rh - box.y() - box.height(),
+                     box.width(), box.height());
+    case 270:
+        return QRect(rh - box.y() - box.height(), box.x(),
+                     box.height(), box.width());
+    default:
+        return box;
+    }
+}
 
 qreal scaleFor(const QSize &size, int maxEdge)
 {
