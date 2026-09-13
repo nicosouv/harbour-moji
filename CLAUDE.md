@@ -86,9 +86,12 @@ slogan — as a build rule:
   reports re-entrancy rather than non-convergence and the evaluation order
   differs - which is why this is a static check and not a test.
 - **Two Tesseract initialisation traps, both of which look like something else.**
-  `Init()`'s datapath is the *parent* of the tessdata directory - it appends
-  `tessdata/` itself - so handing it the real directory makes it search
-  `.../tessdata/tessdata/` and report that the *language* could not be loaded.
+  `Init()`'s datapath means different things in different versions - 3.x appended
+  `tessdata/` to it, 4.x treats it as the directory that holds the files - and the
+  failure either way is "Error opening data file", which names a path without
+  saying which rule produced it. `OcrEngine` therefore tries both and keeps the
+  one that works. Do not replace that with whichever single answer looks right;
+  it has already been wrong here in both directions.
   And the engine must be named: `scripts/build_tesseract.sh` passes
   `--disable-legacy`, so `OEM_DEFAULT` can resolve to a recogniser that is not in
   the binary, which aborts the process instead of returning an error. Always

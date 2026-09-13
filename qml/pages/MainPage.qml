@@ -67,6 +67,12 @@ Page {
                             // Replace rather than push: coming back from the
                             // result should return here, not to a viewfinder that
                             // would restart the camera behind the page.
+                            //
+                            // completeAnimation first, or the replace lands while
+                            // the push that opened the camera is still animating
+                            // and Silica refuses it with "cannot pop while
+                            // transition is in progress".
+                            pageStack.completeAnimation()
                             pageStack.replace(Qt.resolvedUrl("ResultPage.qml"),
                                               { imageUrl: "file://" + path })
                         })
@@ -103,6 +109,11 @@ Page {
                     // The picker is still on the stack at this point; replacing it
                     // means Back from the result returns to the main page rather
                     // than to the gallery.
+                    //
+                    // The selection arrives while the picker's own transition is
+                    // still running, which is what logs "cannot pop while
+                    // transition is in progress" and can drop the replace.
+                    pageStack.completeAnimation()
                     pageStack.replace(Qt.resolvedUrl("ResultPage.qml"),
                                       { imageUrl: "file://"
                                                   + selectedContentProperties.filePath })

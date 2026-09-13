@@ -8,6 +8,7 @@
 #include <QUrl>
 #include <QVariantMap>
 
+#include <QStringList>
 #include <QVariantList>
 
 #include "ocrresult.h"
@@ -107,10 +108,11 @@ private:
     void setBusy(bool busy);
     void setLastError(const QString &error);
 
-    // The directory holding the .traineddata files, and its parent - which is
-    // what Tesseract's Init() wants. See the constructor.
+    // The directory holding the .traineddata files, and the datapaths to try
+    // handing Tesseract - the meaning of that argument changed between its
+    // versions. See the constructor.
     QString m_tessdataPath;
-    QString m_datapath;
+    QStringList m_datapathCandidates;
     OcrResult m_result;
     QString m_lastError;
     bool m_busy = false;

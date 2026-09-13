@@ -16,15 +16,15 @@ OcrEngine::OcrEngine(const QString &tessdataPath, QObject *parent)
     : QObject(parent)
     , m_tessdataPath(tessdataPath)
 {
-    // Tesseract's datapath is the *parent* of the tessdata directory, not the
-    // directory itself: Init() appends "tessdata/" to whatever it is given. Handed
-    // the real directory it would look for .../tessdata/tessdata/eng.traineddata
-    // and report only that the language could not be loaded, which points at the
-    // language rather than at the path and is a genuinely slow thing to see.
+    // Tesseract's datapath means different things in different versions: 3.x
+    // appended "tessdata/" to whatever it was given, 4.x uses it as the directory
+    // holding the .traineddata files. Getting it wrong yields "Error opening data
+    // file", which names a path but not which of the two rules produced it.
     //
-    // Callers pass the directory that actually holds the files, because that is
-    // the one they can check; the adjustment happens here, once.
-    m_datapath = QFileInfo(tessdataPath).absolutePath();
+    // So both are tried, in the order 4.x wants, and the one that works is kept.
+    // Guessing was already wrong once here, in both directions.
+    m_datapathCandidates << tessdataPath
+                         << QFileInfo(tessdataPath).absolutePath();
 
     connect(&m_watcher, &QFutureWatcher<Outcome>::finished,
             this, &OcrEngine::handleFinished);
@@ -108,9 +108,6 @@ OcrEngine::Outcome OcrEngine::run(const QString &path, const QString &languages)
             return outcome;
         }
 
-        qCDebug(lcMoji) << "initialising tesseract with" << languages
-                        << "datapath" << m_datapath;
-
         // OEM_LSTM_ONLY, explicitly, and not the default.
         //
         // scripts/build_tesseract.sh passes --disable-legacy, so the old
@@ -119,12 +116,22 @@ OcrEngine::Outcome OcrEngine::run(const QString &path, const QString &languages)
         // into code that was compiled out, which aborts the process rather than
         // returning an error. Saying which engine we want keeps the build flag
         // and the call in agreement.
-        const int status = m_api->Init(m_datapath.toUtf8().constData(),
-                                       languages.toUtf8().constData(),
-                                       tesseract::OEM_LSTM_ONLY);
+        int status = -1;
+        for (const QString &candidate : m_datapathCandidates) {
+            qCDebug(lcMoji) << "initialising tesseract with" << languages
+                            << "datapath" << candidate;
+            status = m_api->Init(candidate.toUtf8().constData(),
+                                 languages.toUtf8().constData(),
+                                 tesseract::OEM_LSTM_ONLY);
+            if (status == 0) {
+                break;
+            }
+            qCDebug(lcMoji) << "  that datapath did not work, status" << status;
+        }
+
         if (status != 0) {
             m_apiLanguages.clear();
-            qCWarning(lcMoji) << "tesseract Init failed with" << status;
+            qCWarning(lcMoji) << "tesseract Init failed for every datapath";
             outcome.error = tr("The language data could not be loaded.");
             return outcome;
         }
