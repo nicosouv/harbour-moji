@@ -105,6 +105,51 @@ QVector<int> OcrResult::uncertainWords(float threshold) const
     return indices;
 }
 
+QVector<int> OcrResult::wordsForRange(int start, int length) const
+{
+    QVector<int> indices;
+    if (length <= 0) {
+        return indices;
+    }
+
+    const int end = start + length;
+
+    // The same walk text() does, counting separators as it goes. Written out
+    // rather than shared with text() because text() builds a string and this
+    // needs the offsets, and a version that returned both would be read by
+    // nobody.
+    int offset = 0;
+    int previousLine = -1;
+    int previousParagraph = -1;
+
+    for (int i = 0; i < m_words.size(); ++i) {
+        const OcrWord &word = m_words.at(i);
+
+        if (previousLine < 0) {
+            // First word: no separator before it.
+        } else if (word.paragraph != previousParagraph) {
+            offset += 2;   // "\n\n"
+        } else {
+            offset += 1;   // " " or "\n"
+        }
+
+        const int wordStart = offset;
+        const int wordEnd = wordStart + word.text.length();
+
+        // Any overlap counts: a field can begin mid-word when the recogniser
+        // glued a label to it.
+        if (wordStart < end && start < wordEnd) {
+            indices.append(i);
+        }
+
+        offset = wordEnd;
+        previousLine = word.line;
+        previousParagraph = word.paragraph;
+    }
+
+    return indices;
+}
+
 QVector<int> OcrResult::lineNumbers() const
 {
     QVector<int> numbers;

@@ -66,6 +66,14 @@ slogan — as a build rule:
 
 ## Things worth not relearning
 
+- **Redaction is flattened into the pixels or it is not redaction.** The black
+  bars are painted into a saved copy, not drawn as an overlay and not recorded in
+  metadata: anything a viewer can switch off looks like redaction while being
+  nothing of the sort. The boxes are drawn a few pixels proud of the word, because
+  the recogniser's box is tight to the glyphs and a descender poking out from
+  under a bar is enough to read a digit. Only IBANs, card numbers and passport
+  codes are hidden by default - an email is found too, and deciding it is private
+  would be deciding for the user.
 - **A table is measurable without anything declaring itself one.** Tesseract
   reports words, lines and blocks, never columns - but a table is a block whose
   words pile into vertical bands, so the column boundaries are the channels no

@@ -104,3 +104,17 @@ add_executable(tst_tableextract
 target_include_directories(tst_tableextract PRIVATE ${MOJI_SRC})
 target_link_libraries(tst_tableextract Qt5::Core Qt5::Gui Qt5::Test)
 add_test(NAME tableextract COMMAND tst_tableextract)
+
+# Mapping a field's offset in the joined text back to the words it came from,
+# which is what lets a black box land on the right part of the photo. The join
+# inserts separators that exist in the string and nowhere in the image, so an
+# off-by-one puts the box on the neighbouring word - a redaction failure that
+# looks like a success.
+add_executable(tst_redact
+    ${CMAKE_CURRENT_LIST_DIR}/tst_redact.cpp
+    ${MOJI_SRC}/ocrresult.cpp
+    ${MOJI_SRC}/fieldparser.cpp
+)
+target_include_directories(tst_redact PRIVATE ${MOJI_SRC})
+target_link_libraries(tst_redact Qt5::Core Qt5::Gui Qt5::Test)
+add_test(NAME redact COMMAND tst_redact)

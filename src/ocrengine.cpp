@@ -1,6 +1,7 @@
 #include "ocrengine.h"
 
 #include <QFile>
+#include <QPainter>
 #include <QFileInfo>
 #include <QTextStream>
 #include <QLineF>
@@ -603,6 +604,93 @@ QVariantList OcrEngine::tables() const
         list.append(map);
     }
     return list;
+}
+
+namespace {
+
+// The kinds worth hiding without being asked. Email and Url are found as well,
+// but blacking them out by default would be deciding for the user what they
+// consider private; these three are money and identity.
+bool isSensitive(FieldParser::Kind kind)
+{
+    return kind == FieldParser::Iban
+           || kind == FieldParser::CreditCard
+           || kind == FieldParser::MrzLine;
+}
+
+} // namespace
+
+QVector<QRect> OcrEngine::sensitiveBoxes() const
+{
+    QVector<QRect> boxes;
+    const QString text = m_result.text();
+
+    for (const FieldParser::Field &field : FieldParser::scan(text)) {
+        if (!isSensitive(field.kind)) {
+            continue;
+        }
+
+        // One box per word rather than one around the lot: a field that wraps
+        // across two lines would otherwise be covered by a rectangle spanning
+        // everything between them, including whatever sits to the side.
+        for (int index : m_result.wordsForRange(field.start, field.length)) {
+            boxes.append(m_result.words().at(index).box);
+        }
+    }
+
+    return boxes;
+}
+
+int OcrEngine::sensitiveCount() const
+{
+    int count = 0;
+    for (const FieldParser::Field &field : FieldParser::scan(m_result.text())) {
+        if (isSensitive(field.kind)) {
+            ++count;
+        }
+    }
+    return count;
+}
+
+bool OcrEngine::exportRedacted(const QUrl &imageUrl, const QString &path) const
+{
+    const QVector<QRect> boxes = sensitiveBoxes();
+    if (boxes.isEmpty()) {
+        return false;
+    }
+
+    const QString source = imageUrl.isLocalFile() ? imageUrl.toLocalFile()
+                                                  : imageUrl.toString();
+
+    // Upright, the same way recognition read it, or the boxes are in one
+    // orientation and the pixels in another.
+    QImage photo = ImagePrep::loadUpright(source);
+    if (photo.isNull()) {
+        qCWarning(lcMoji) << "cannot read" << source << "to redact it";
+        return false;
+    }
+
+    // Painted into the pixels and saved as a new file. Flattened on purpose:
+    // an overlay a viewer can turn off, or metadata carrying the original, would
+    // make this look like redaction while being nothing of the sort.
+    QPainter painter(&photo);
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(Qt::black);
+
+    for (const QRect &box : boxes) {
+        // A little larger than the word: the recogniser's box is tight to the
+        // glyphs, and a descender or an accent poking out from under a black bar
+        // is enough to read a digit.
+        painter.drawRect(box.adjusted(-4, -4, 4, 4));
+    }
+    painter.end();
+
+    if (!photo.save(path)) {
+        qCWarning(lcMoji) << "cannot write the redacted copy to" << path;
+        return false;
+    }
+
+    return true;
 }
 
 QString OcrEngine::csvOfBlock(int block) const

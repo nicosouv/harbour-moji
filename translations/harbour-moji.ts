@@ -215,6 +215,10 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>Could not save the copy</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Could not save the table</source>
         <translation type="unfinished"></translation>
     </message>
@@ -224,6 +228,10 @@
     </message>
     <message>
         <source>Found</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Hide the private numbers</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -312,6 +320,10 @@
     </message>
     <message>
         <source>The text below can be edited.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>This page carries account or card numbers. The black square saves a copy with them painted out.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

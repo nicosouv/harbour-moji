@@ -215,6 +215,10 @@
         <translation>Impossible d'enregistrer le PDF</translation>
     </message>
     <message>
+        <source>Could not save the copy</source>
+        <translation>Impossible d'enregistrer la copie</translation>
+    </message>
+    <message>
         <source>Could not save the table</source>
         <translation>Impossible d'enregistrer le tableau</translation>
     </message>
@@ -225,6 +229,10 @@
     <message>
         <source>Found</source>
         <translation>Détecté</translation>
+    </message>
+    <message>
+        <source>Hide the private numbers</source>
+        <translation>Masquer les numéros privés</translation>
     </message>
     <message>
         <source>Language</source>
@@ -313,6 +321,10 @@
     <message>
         <source>The text below can be edited.</source>
         <translation>Le texte ci-dessous est modifiable.</translation>
+    </message>
+    <message>
+        <source>This page carries account or card numbers. The black square saves a copy with them painted out.</source>
+        <translation>Cette page contient des numéros de compte ou de carte. Le carré noir enregistre une copie où ils sont masqués.</translation>
     </message>
     <message>
         <source>Word</source>

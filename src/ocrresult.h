@@ -79,6 +79,15 @@ public:
     // already corrected.
     QVector<int> uncertainWords(float threshold = LowConfidence) const;
 
+    // The words covering a range of text(), by offset and length.
+    //
+    // fieldparser works on the joined text and reports where in that string it
+    // found an IBAN; drawing a box over that IBAN in the photo needs the words it
+    // came from. Nothing else can answer it: the join inserts spaces and newlines
+    // that exist in the string and nowhere in the image, so the mapping has to
+    // replay the same join rather than guess at it.
+    QVector<int> wordsForRange(int start, int length) const;
+
     bool isEmpty() const { return m_words.isEmpty(); }
     int count() const { return m_words.size(); }
 

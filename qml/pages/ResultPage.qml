@@ -102,6 +102,15 @@ Page {
             banner.show(qsTr("All text copied"))
         } else if (id === "again") {
             page.readWhole()
+        } else if (id === "hide") {
+            var safeName = page.imageUrl.toString().split("/").pop()
+                               .replace(/\.[^.]+$/, "") + "-hidden.jpg"
+            var safeWhere = StandardPaths.download + "/" + safeName
+            if (ocr.exportRedacted(page.imageUrl, safeWhere.replace("file://", ""))) {
+                banner.show(qsTr("Saved to Downloads as %1").arg(safeName))
+            } else {
+                banner.show(qsTr("Could not save the copy"))
+            }
         } else if (id === "csv") {
             // The first table found. A page with two is rare enough that picking
             // between them can wait until someone meets one.
@@ -531,10 +540,23 @@ Page {
                                            name: qsTr("Save the table as CSV"),
                                            id: "csv" })
 
+                // Offered only when there is something to hide, for the same
+                // reason as the table verb.
+                property var hideVerb: ({ glyph: "\u2588",
+                                          name: qsTr("Hide the private numbers"),
+                                          id: "hide" })
+
                 Repeater {
-                    model: ocr.tables.length > 0
-                           ? actions.verbs.concat([actions.tableVerb])
-                           : actions.verbs
+                    model: {
+                        var list = actions.verbs.slice()
+                        if (ocr.tables.length > 0) {
+                            list.push(actions.tableVerb)
+                        }
+                        if (ocr.sensitiveCount > 0) {
+                            list.push(actions.hideVerb)
+                        }
+                        return list
+                    }
 
                     delegate: MouseArea {
                         width: Theme.itemSizeSmall
@@ -648,6 +670,16 @@ Page {
                 font.pixelSize: Theme.fontSizeExtraSmall
                 color: Theme.errorColor
                 text: qsTr("Words marked in red were hard to read. Tap one to retype it.")
+            }
+
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                visible: ocr.sensitiveCount > 0
+                wrapMode: Text.Wrap
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: Tokens.secondaryColor
+                text: qsTr("This page carries account or card numbers. The black square saves a copy with them painted out.")
             }
 
             Label {

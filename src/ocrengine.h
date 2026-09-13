@@ -95,11 +95,15 @@ public:
     bool isEdited() const { return m_edited; }
 
     QVariantList fields() const;
+
+    // The word boxes covering every sensitive field, in the photo's coordinates.
+    QVector<QRect> sensitiveBoxes() const;
     QVariantList lines() const;
     QVariantList uncertainWords() const;
     int uncertainCount() const;
     QVariantList blocks() const;
     QVariantList tables() const;
+    int sensitiveCount() const;
 
     // The text of one block, or of the whole page when block is negative.
     Q_INVOKABLE QString textOfBlock(int block) const;
@@ -120,6 +124,18 @@ public:
 
     // The block as CSV, empty when it does not read as a table.
     Q_INVOKABLE QString csvOfBlock(int block) const;
+
+    // How many sensitive numbers are on the page - IBANs, card numbers, passport
+    // codes. Only the kinds that identify money or a person: an email address is
+    // found too, and blacking it out by default would be deciding for the user
+    // what they consider private.
+    Q_PROPERTY(int sensitiveCount READ sensitiveCount NOTIFY resultChanged)
+
+    // Writes a copy of the photo with those numbers painted over, flattened so
+    // the covering is part of the image rather than something a viewer can
+    // switch off. Returns false if there is nothing to hide or the file cannot
+    // be written.
+    Q_INVOKABLE bool exportRedacted(const QUrl &imageUrl, const QString &path) const;
 
     // Writes that CSV to a file. Returns false if there is no table or the file
     // cannot be written.
