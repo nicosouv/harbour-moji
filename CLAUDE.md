@@ -88,10 +88,23 @@ slogan — as a build rule:
   `ImagePrep::loadUpright()` is the only way a photo should be read here.
 - **EXIF says how the phone was held, not how the text sits on the page.** A table
   or a spine caption is often turned against the paper, so recognition runs at 0,
-  90 and 270 and keeps the best `readingScore()` - word count times mean
-  confidence, because confidence alone prefers three certain letters to four
-  hundred good words. Tesseract's OSD would answer in one pass but wants a 10MB
-  model and may not survive `--disable-legacy`.
+  90 and 270 and keeps the best `readingScore()`. That score is mean confidence
+  times the *square root* of the word count, and the square root is the whole
+  point: a page read sideways does not find less, it finds far more, all of it
+  fragments the recogniser openly doubts. A plain product picked 0 degrees on a
+  real page where 90 was obviously right (321 words at 37.6% against 135 at
+  74.7%). The numbers are in `tests/tst_correction.cpp`.
+- **Quarter turns do nothing for a page held at seven degrees**, which is the
+  usual case and costs a great deal. The tilt is measured from the baselines the
+  winning pass already reported - `PageIterator::Baseline`, so it is free - and
+  the page is read once more, straightened, keeping that result only if it scored
+  better. `QImage::transformed` preserves `Format_Grayscale8` for a quarter turn
+  and **not** for an arbitrary angle: it returns ARGB32 there, which would have
+  Tesseract read every fourth byte. `ImagePrep::turnedBy` converts back, and a
+  test pins it.
+- Mapping a box out of an arbitrary rotation uses `QImage::trueMatrix`, never a
+  hand-built transform: Qt translates the rotated result to keep it at the origin
+  and that offset is not worth re-deriving.
 - **A binding loop does not look like a bug, it looks like a hang.** Qt prints
   "Binding loop detected" once and then keeps re-evaluating the layout, so on a
   device the page appears frozen and the log line scrolls past unread. The one
@@ -113,6 +126,10 @@ slogan — as a build rule:
   `--disable-legacy`, so `OEM_DEFAULT` can resolve to a recogniser that is not in
   the binary, which aborts the process instead of returning an error. Always
   `OEM_LSTM_ONLY`.
+- A null `QString` binds as SQL NULL. `HistoryStore` has `text TEXT NOT NULL`, so
+  recording a photo that turned out to have no text in it failed silently until a
+  test caught it. Coerce, or make the column nullable - but decide, rather than
+  finding out.
 - `TessBaseAPI` is not thread-safe and initialisation is slow. One instance,
   owned by the engine, driven from a worker thread via `QtConcurrent`; never one
   per request.

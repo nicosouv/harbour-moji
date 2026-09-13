@@ -63,6 +63,7 @@ set(SOURCES
     src/logging.cpp
     src/settings.cpp
     src/ocrengine.cpp
+    src/historystore.cpp
     ${CORE_SOURCES}
 )
 
@@ -70,6 +71,7 @@ set(HEADERS
     src/logging.h
     src/settings.h
     src/ocrengine.h
+    src/historystore.h
     ${CORE_HEADERS}
 )
 

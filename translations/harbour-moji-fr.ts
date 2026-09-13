@@ -73,12 +73,28 @@
 <context>
     <name>MainPage</name>
     <message>
+        <source>%1 words</source>
+        <translation>%1 mots</translation>
+    </message>
+    <message>
+        <source>%1 words — photo no longer on the device</source>
+        <translation>%1 mots — photo absente de l'appareil</translation>
+    </message>
+    <message>
         <source>About</source>
         <translation>À propos</translation>
     </message>
     <message>
         <source>Choose a photo</source>
         <translation>Choisir une photo</translation>
+    </message>
+    <message>
+        <source>Clear history</source>
+        <translation>Effacer l'historique</translation>
+    </message>
+    <message>
+        <source>Clearing history</source>
+        <translation>Effacement de l'historique</translation>
     </message>
     <message>
         <source>Everything happens on this device. Moji has no network permission at all.</source>
@@ -99,6 +115,10 @@
     <message>
         <source>Read</source>
         <translation>Lire</translation>
+    </message>
+    <message>
+        <source>Recent</source>
+        <translation>Récents</translation>
     </message>
     <message>
         <source>Settings</source>
@@ -308,6 +328,25 @@
     <message>
         <source>Theme</source>
         <translation>Thème</translation>
+    </message>
+</context>
+<context>
+    <name>StoredTextPage</name>
+    <message>
+        <source>All text</source>
+        <translation>Tout le texte</translation>
+    </message>
+    <message>
+        <source>All text copied</source>
+        <translation>Tout le texte copié</translation>
+    </message>
+    <message>
+        <source>Copy all text</source>
+        <translation>Copier tout le texte</translation>
+    </message>
+    <message>
+        <source>Photo no longer on the device</source>
+        <translation>Photo absente de l'appareil</translation>
     </message>
 </context>
 </TS>

@@ -36,6 +36,12 @@ Page {
                 onClicked: pageStack.push(Qt.resolvedUrl("AboutPage.qml"))
             }
             MenuItem {
+                text: qsTr("Clear history")
+                visible: history.count > 0
+                onClicked: remorse.execute(qsTr("Clearing history"),
+                                           function () { history.forgetAll() })
+            }
+            MenuItem {
                 text: qsTr("Settings")
                 onClicked: pageStack.push(Qt.resolvedUrl("SettingsPage.qml"))
             }
@@ -89,6 +95,43 @@ Page {
                 }
             }
 
+            GroupPanel {
+                width: parent.width
+                title: qsTr("Recent")
+                visible: history.count > 0
+
+                Repeater {
+                    model: history.entries
+
+                    delegate: PanelRow {
+                        width: parent.width
+
+                        // What the page says, not what the camera called the
+                        // file: a document is recognised by its first line far
+                        // faster than by IMG_0042.
+                        title: modelData.summary
+                        detail: modelData.imageExists
+                                ? qsTr("%1 words").arg(modelData.wordCount)
+                                : qsTr("%1 words — photo no longer on the device")
+                                  .arg(modelData.wordCount)
+                        glyph: modelData.imageExists ? "\u25a4" : "\u2717"
+
+                        onClicked: {
+                            if (modelData.imageExists) {
+                                page.read(modelData.imagePath)
+                            } else {
+                                // The photo is gone, but the text was kept. Show
+                                // that rather than offering a reading that cannot
+                                // happen.
+                                pageStack.push(Qt.resolvedUrl("StoredTextPage.qml"),
+                                               { title: modelData.summary,
+                                                 body: history.textOf(modelData.id) })
+                            }
+                        }
+                    }
+                }
+            }
+
             Label {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
@@ -98,6 +141,10 @@ Page {
                 text: qsTr("Everything happens on this device. Moji has no network permission at all.")
             }
         }
+    }
+
+    RemorsePopup {
+        id: remorse
     }
 
     Component {

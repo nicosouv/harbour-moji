@@ -73,11 +73,27 @@
 <context>
     <name>MainPage</name>
     <message>
+        <source>%1 words</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>%1 words — photo no longer on the device</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>About</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Choose a photo</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Clear history</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Clearing history</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -98,6 +114,10 @@
     </message>
     <message>
         <source>Read</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Recent</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -307,6 +327,25 @@
     </message>
     <message>
         <source>Theme</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>StoredTextPage</name>
+    <message>
+        <source>All text</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>All text copied</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Copy all text</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Photo no longer on the device</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

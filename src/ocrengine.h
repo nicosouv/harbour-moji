@@ -8,6 +8,8 @@
 #include <QUrl>
 #include <QVariantMap>
 
+#include <QImage>
+#include <QLineF>
 #include <QStringList>
 #include <QVariantList>
 
@@ -129,6 +131,14 @@ private:
         OcrResult result;
         QString error;
     };
+
+    // One recognition pass over one image, filling boxes in *that image's*
+    // coordinates. Both the quarter-turn search and the straightening use it, so
+    // the iteration that assembles the hierarchy exists once.
+    //
+    // Runs on the worker thread, with the API mutex already held.
+    bool recogniseInto(const QImage &grey, OcrResult *out,
+                       QVector<QLineF> *baselines);
 
     // Runs on the worker thread.
     Outcome run(const QString &path, const QString &languages,

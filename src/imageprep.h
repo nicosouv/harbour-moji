@@ -2,8 +2,11 @@
 #define IMAGEPREP_H
 
 #include <QImage>
+#include <QLineF>
 #include <QRect>
 #include <QString>
+#include <QTransform>
+#include <QVector>
 
 // Getting a camera photo into the shape Tesseract wants, and keeping the way
 // back.
@@ -61,6 +64,41 @@ QImage rotated(const QImage &image, int degrees);
 // missing transform. `rotatedSize` is the size of the image the box was measured
 // on.
 QRect unrotateRect(const QRect &box, int degrees, const QSize &rotatedSize);
+
+// The tilt of a page, in degrees, from the baselines the recogniser reported.
+//
+// A page is rarely photographed square. Quarter turns fix a page held sideways
+// and do nothing at all for one held at eight degrees, which is the common case
+// and costs a great deal of accuracy - Tesseract's line finder tolerates a little
+// skew and gets steadily worse through it.
+//
+// The median is taken, not the mean: a single baseline drawn across two columns,
+// or along a rule in a table, is wildly wrong and would drag an average with it.
+// Positive means the text runs downhill to the right.
+//
+// Returns 0 when there is nothing to measure.
+qreal skewAngle(const QVector<QLineF> &baselines);
+
+// The image turned by an arbitrary angle, and the exact transform Qt used to do
+// it. The transform is needed to get boxes back: Qt translates the result so the
+// rotated image still starts at the origin, and that offset is not something to
+// re-derive by hand - QImage::trueMatrix reports it.
+struct Turned
+{
+    QImage image;
+    QTransform transform;
+};
+
+Turned turnedBy(const QImage &image, qreal degrees);
+
+// A box measured on a turned image, back in the coordinates of the image before
+// the turn.
+QRect untransformRect(const QRect &box, const QTransform &transform);
+
+// Below this a page is straight enough that turning it costs more than it gains;
+// above it, the tilt is more likely a mis-measurement than a page.
+const qreal MinSkew = 0.75;
+const qreal MaxSkew = 20.0;
 
 // Greyscale, no larger than maxEdge on its long side.
 //

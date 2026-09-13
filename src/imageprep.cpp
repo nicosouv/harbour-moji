@@ -3,6 +3,8 @@
 #include <QImageReader>
 #include <QTransform>
 
+#include <algorithm>
+
 namespace ImagePrep {
 
 QImage loadUpright(const QString &path)
@@ -54,6 +56,80 @@ QRect unrotateRect(const QRect &box, int degrees, const QSize &rotatedSize)
     default:
         return box;
     }
+}
+
+qreal skewAngle(const QVector<QLineF> &baselines)
+{
+    QVector<qreal> angles;
+    angles.reserve(baselines.size());
+
+    for (const QLineF &line : baselines) {
+        // Very short baselines are single words or stray marks; their angle is
+        // mostly quantisation noise.
+        if (line.length() < 40.0) {
+            continue;
+        }
+
+        // QLineF measures anticlockwise from the x axis with y upwards, while an
+        // image has y downwards, so the sign is flipped to make "downhill to the
+        // right" positive.
+        qreal angle = -line.angle();
+        while (angle <= -90.0) {
+            angle += 180.0;
+        }
+        while (angle > 90.0) {
+            angle -= 180.0;
+        }
+        angles.append(angle);
+    }
+
+    if (angles.isEmpty()) {
+        return 0.0;
+    }
+
+    std::sort(angles.begin(), angles.end());
+    const int middle = angles.size() / 2;
+    return (angles.size() % 2 == 0)
+               ? (angles.at(middle - 1) + angles.at(middle)) / 2.0
+               : angles.at(middle);
+}
+
+Turned turnedBy(const QImage &image, qreal degrees)
+{
+    Turned turned;
+    if (image.isNull()) {
+        return turned;
+    }
+
+    QTransform rotation;
+    rotation.rotate(degrees);
+
+    // trueMatrix is the transform Qt will *actually* apply, including the
+    // translation that keeps the result inside the origin. Rebuilding that offset
+    // by hand is how an overlay ends up a few pixels adrift at one corner and
+    // fine at the others.
+    turned.transform = QImage::trueMatrix(rotation, image.width(), image.height());
+
+    // Converted back to the format it arrived in. A quarter turn preserves
+    // Format_Grayscale8, but an arbitrary angle has to interpolate and Qt returns
+    // ARGB32_Premultiplied - four bytes per pixel where OcrEngine will tell
+    // Tesseract there is one, so it would read every fourth byte and recognise
+    // noise. Nothing would crash; the page would simply come out as gibberish.
+    const QImage::Format wanted = image.format();
+    QImage result = image.transformed(rotation, Qt::SmoothTransformation);
+    turned.image = (result.format() == wanted) ? result
+                                               : result.convertToFormat(wanted);
+    return turned;
+}
+
+QRect untransformRect(const QRect &box, const QTransform &transform)
+{
+    bool invertible = false;
+    const QTransform inverse = transform.inverted(&invertible);
+    if (!invertible) {
+        return box;
+    }
+    return inverse.mapRect(box);
 }
 
 qreal scaleFor(const QSize &size, int maxEdge)

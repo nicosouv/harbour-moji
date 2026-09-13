@@ -3,13 +3,16 @@
 #endif
 
 #include <QCoreApplication>
+#include <QDir>
 #include <QGuiApplication>
 #include <QLocale>
 #include <QQmlContext>
 #include <QQmlEngine>
 #include <QQuickView>
+#include <QStandardPaths>
 #include <QTranslator>
 
+#include "historystore.h"
 #include "logging.h"
 #include "ocrengine.h"
 #include "settings.h"
@@ -26,6 +29,20 @@ int main(int argc, char *argv[])
     const QString tessdataPath = appDir + QStringLiteral("/tessdata");
     Settings *settings = new Settings(tessdataPath, app.data());
     OcrEngine *engine = new OcrEngine(tessdataPath, app.data());
+
+    // The history lives with the app's own data, not beside the photos: it holds
+    // recognised text, which is a different thing from the pictures and should not
+    // appear in the gallery.
+    const QString dataDir =
+        QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    QDir().mkpath(dataDir);
+
+    HistoryStore *history = new HistoryStore(app.data());
+    if (!history->open(dataDir + QStringLiteral("/history.db"))) {
+        // Carry on without it: not being able to remember is a worse app, not a
+        // broken one, and failing to start over it would be the wrong trade.
+        qCWarning(lcMoji) << "history unavailable; readings will not be kept";
+    }
 
     // Language: the system locale. Unlike the OCR languages, this is the
     // interface, and Sailfish users expect it to follow the system.
@@ -54,6 +71,7 @@ int main(int argc, char *argv[])
 
     view->rootContext()->setContextProperty(QStringLiteral("settings"), settings);
     view->rootContext()->setContextProperty(QStringLiteral("ocr"), engine);
+    view->rootContext()->setContextProperty(QStringLiteral("history"), history);
     view->rootContext()->setContextProperty(QStringLiteral("tessdataPath"), tessdataPath);
 #ifdef APP_VERSION
     view->rootContext()->setContextProperty(QStringLiteral("appVersion"),

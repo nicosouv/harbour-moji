@@ -14,7 +14,7 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 
-find_package(Qt5 REQUIRED COMPONENTS Core Gui Test)
+find_package(Qt5 REQUIRED COMPONENTS Core Gui Sql Test)
 
 enable_testing()
 
@@ -66,3 +66,15 @@ add_executable(tst_correction
 target_include_directories(tst_correction PRIVATE ${MOJI_SRC})
 target_link_libraries(tst_correction Qt5::Core Qt5::Gui Qt5::Test)
 add_test(NAME correction COMMAND tst_correction)
+
+# What has been read before. Run against a real SQLite database in memory: the
+# interesting rules are SQL ones - re-reading a page replaces its entry rather
+# than adding a second, and the list stays bounded.
+add_executable(tst_historystore
+    ${CMAKE_CURRENT_LIST_DIR}/tst_historystore.cpp
+    ${MOJI_SRC}/historystore.cpp
+    ${MOJI_SRC}/logging.cpp
+)
+target_include_directories(tst_historystore PRIVATE ${MOJI_SRC})
+target_link_libraries(tst_historystore Qt5::Core Qt5::Sql Qt5::Test)
+add_test(NAME historystore COMMAND tst_historystore)

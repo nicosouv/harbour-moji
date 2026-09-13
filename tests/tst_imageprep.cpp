@@ -1,5 +1,9 @@
 #include <QtTest>
+#include <QLineF>
 #include <QTransform>
+#include <QtMath>
+
+#include <cmath>
 
 #include "imageprep.h"
 
@@ -48,6 +52,14 @@ private slots:
     void unrotateRectUndoesNinety();
     void unrotateRectUndoesTwoSeventy();
     void unrotateRectRoundTripsEveryQuarterTurn();
+
+    void skewAngleIsZeroForLevelText();
+    void skewAngleReadsATilt();
+    void skewAngleIgnoresShortBaselines();
+    void skewAngleTakesTheMedianNotTheMean();
+    void skewAngleHandlesNothingToMeasure();
+    void turnedByRoundTripsABox();
+    void turnedByLeavesTheImageUsable();
 };
 
 void TestImagePrep::scaleForLeavesSmallImagesAlone()
@@ -233,6 +245,103 @@ void TestImagePrep::unrotateRectRoundTripsEveryQuarterTurn()
         const QRect back = unrotateRect(inTurned, angle, turned.size());
         QCOMPARE(back, inOriginal);
     }
+}
+
+// A baseline running left to right across a page, tilted by `degrees` downhill.
+static QLineF baseline(qreal degrees, qreal length = 400.0)
+{
+    const qreal radians = qDegreesToRadians(degrees);
+    return QLineF(0.0, 0.0,
+                  length * std::cos(radians), length * std::sin(radians));
+}
+
+void TestImagePrep::skewAngleIsZeroForLevelText()
+{
+    QVector<QLineF> lines;
+    for (int i = 0; i < 5; ++i) {
+        lines.append(baseline(0.0));
+    }
+    QVERIFY(qAbs(skewAngle(lines)) < 0.01);
+}
+
+void TestImagePrep::skewAngleReadsATilt()
+{
+    QVector<QLineF> lines;
+    for (int i = 0; i < 5; ++i) {
+        lines.append(baseline(7.0));
+    }
+    QVERIFY2(qAbs(skewAngle(lines) - 7.0) < 0.1,
+             qPrintable(QStringLiteral("got %1").arg(skewAngle(lines))));
+}
+
+void TestImagePrep::skewAngleIgnoresShortBaselines()
+{
+    QVector<QLineF> lines;
+    // Three real lines at 5 degrees...
+    for (int i = 0; i < 3; ++i) {
+        lines.append(baseline(5.0));
+    }
+    // ...and a crop of stubs pointing anywhere, as a stray mark or a single
+    // character would. They must not be allowed a vote.
+    for (int i = 0; i < 10; ++i) {
+        lines.append(baseline(70.0, 8.0));
+    }
+    QVERIFY2(qAbs(skewAngle(lines) - 5.0) < 0.1,
+             qPrintable(QStringLiteral("got %1").arg(skewAngle(lines))));
+}
+
+void TestImagePrep::skewAngleTakesTheMedianNotTheMean()
+{
+    QVector<QLineF> lines;
+    for (int i = 0; i < 5; ++i) {
+        lines.append(baseline(3.0));
+    }
+    // One baseline drawn across two columns, or along a table rule: badly wrong,
+    // and long enough to pass the length test. A mean would be dragged to ~11.
+    lines.append(baseline(50.0, 900.0));
+
+    QVERIFY2(qAbs(skewAngle(lines) - 3.0) < 0.1,
+             qPrintable(QStringLiteral("got %1").arg(skewAngle(lines))));
+}
+
+void TestImagePrep::skewAngleHandlesNothingToMeasure()
+{
+    QCOMPARE(skewAngle(QVector<QLineF>()), 0.0);
+}
+
+void TestImagePrep::turnedByRoundTripsABox()
+{
+    // The property the overlay depends on: a box measured on the turned image,
+    // mapped back, must land on the region it came from. Qt translates the
+    // rotated result to keep it at the origin, and forgetting that offset puts
+    // every box a little wrong in a way that looks like a calibration problem.
+    const QImage original = photo(400, 300);
+    const Turned turned = turnedBy(original, 7.0);
+
+    QVERIFY(!turned.image.isNull());
+
+    const QRect inOriginal(120, 90, 60, 20);
+    const QRect inTurned = turned.transform.mapRect(inOriginal);
+    const QRect back = untransformRect(inTurned, turned.transform);
+
+    // mapRect of a rotated rectangle returns its bounding box, so the round trip
+    // grows slightly; it must still be centred on where it started.
+    QVERIFY(qAbs(back.center().x() - inOriginal.center().x()) <= 2);
+    QVERIFY(qAbs(back.center().y() - inOriginal.center().y()) <= 2);
+    QVERIFY(back.contains(inOriginal.center()));
+}
+
+void TestImagePrep::turnedByLeavesTheImageUsable()
+{
+    // Greyscale must survive: OcrEngine tells Tesseract there is one byte per
+    // pixel, and a rotation that quietly returned ARGB would have it read every
+    // fourth byte and recognise noise.
+    const Prepared prepared = prepare(photo(400, 300));
+    const Turned turned = turnedBy(prepared.image, 6.0);
+
+    QCOMPARE(turned.image.format(), QImage::Format_Grayscale8);
+    // Turning makes the bounding box larger, never smaller.
+    QVERIFY(turned.image.width() >= prepared.image.width());
 }
 
 QTEST_APPLESS_MAIN(TestImagePrep)

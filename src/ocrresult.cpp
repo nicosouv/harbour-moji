@@ -85,6 +85,14 @@ void OcrResult::setWordText(int index, const QString &text)
     word.confidence = 100.0f;
 }
 
+void OcrResult::setWordBox(int index, const QRect &box)
+{
+    if (index < 0 || index >= m_words.size()) {
+        return;
+    }
+    m_words[index].box = box;
+}
+
 QVector<int> OcrResult::uncertainWords(float threshold) const
 {
     QVector<int> indices;

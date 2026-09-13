@@ -71,6 +71,10 @@ public:
     // the whole reason this is worth having.
     void setWordText(int index, const QString &text);
 
+    // Moves a word's box. Used while mapping a pass's results out of whatever
+    // rotation and scaling it was recognised under.
+    void setWordBox(int index, const QRect &box);
+
     // Indices of the words worth offering for correction: low confidence, and not
     // already corrected.
     QVector<int> uncertainWords(float threshold = LowConfidence) const;

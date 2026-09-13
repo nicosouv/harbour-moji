@@ -51,6 +51,15 @@ Page {
 
     allowedOrientations: defaultAllowedOrientations
 
+    Connections {
+        target: ocr
+        onFinished: {
+            history.remember(page.imageUrl.toString().replace("file://", ""),
+                             settings.tesseractLanguages,
+                             ocr.wordCount, ocr.confidence, ocr.text)
+        }
+    }
+
     Component.onCompleted: {
         if (imageUrl != "") {
             ocr.recognise(imageUrl, settings.tesseractLanguages, settings.autoRotate)
