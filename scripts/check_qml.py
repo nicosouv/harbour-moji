@@ -179,12 +179,54 @@ def check_painted_size_binding(path, lines):
     return findings
 
 
+# Properties that need a newer QtQuick than the ubiquitous "import QtQuick 2.0".
+#
+# Getting this wrong does not degrade gracefully: the property is simply absent
+# and the entire file fails to load, so the page comes up blank with the reason
+# only in the journal.
+QTQUICK_IMPORT = re.compile(r"^\s*import\s+QtQuick\s+2\.(\d+)")
+
+VERSIONED_PROPERTIES = {
+    "autoTransform": 5,   # Image.autoTransform, Qt 5.5 / QtQuick 2.5
+}
+
+
+def check_qtquick_version(path, lines):
+    """A property that needs a newer QtQuick than the file imports.
+
+    A QML import names the API version being asked for, not the one the device
+    has. Sailfish ships Qt 5.6, so QtQuick 2.5 resolves happily - but a file
+    that says "import QtQuick 2.0" and then sets Image.autoTransform does not
+    merely lose that property. The whole file fails to load, the page is blank,
+    and the only explanation is a line in the journal.
+    """
+    imported = None
+    for raw in lines:
+        match = QTQUICK_IMPORT.search(strip_comments(raw))
+        if match:
+            imported = int(match.group(1))
+            break
+
+    if imported is None:
+        return []
+
+    findings = []
+    for number, raw in enumerate(lines, start=1):
+        line = strip_comments(raw)
+        for name, needed in VERSIONED_PROPERTIES.items():
+            if re.search(r"\b" + name + r"\s*:", line) and imported < needed:
+                findings.append((number, f"{line.strip()}  (needs QtQuick 2.{needed}, "
+                                         f"file imports 2.{imported})"))
+    return findings
+
+
 CHECKS = [
     ("model get() inside a property binding", check_get_in_binding),
     ("property shadows one Item already has", check_shadowed_item_property),
     ("component name shadows a platform type", check_shadowed_platform_type),
     ("recognised text rendered as rich text", check_richtext),
     ("size bound to a child's painted size", check_painted_size_binding),
+    ("property needs a newer QtQuick than imported", check_qtquick_version),
 ]
 
 

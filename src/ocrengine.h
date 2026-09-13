@@ -51,6 +51,21 @@ class OcrEngine : public QObject
     // anything - and, tinted by confidence, which parts to look at twice.
     Q_PROPERTY(QVariantList lines READ lines NOTIFY resultChanged)
 
+    // The words the recogniser was unsure of, with their boxes, for highlighting
+    // on the photo and offering for correction.
+    //
+    // Only the doubtful ones, never all of them: a page holds a couple of thousand
+    // words and a Repeater over that stutters, while the ones worth showing are
+    // usually a handful.
+    Q_PROPERTY(QVariantList uncertainWords READ uncertainWords NOTIFY resultChanged)
+    Q_PROPERTY(int uncertainCount READ uncertainCount NOTIFY resultChanged)
+
+    // The blocks the recogniser found - a column, a panel, a caption. Offering
+    // these is what lets a user take one piece of a busy page without cropping
+    // the photo: the separation has already been worked out, it was simply never
+    // shown.
+    Q_PROPERTY(QVariantList blocks READ blocks NOTIFY resultChanged)
+
 public:
     explicit OcrEngine(const QString &tessdataPath, QObject *parent = nullptr);
     ~OcrEngine() override;
@@ -63,6 +78,16 @@ public:
     QString lastError() const { return m_lastError; }
     QVariantList fields() const;
     QVariantList lines() const;
+    QVariantList uncertainWords() const;
+    int uncertainCount() const;
+    QVariantList blocks() const;
+
+    // The text of one block, or of the whole page when block is negative.
+    Q_INVOKABLE QString textOfBlock(int block) const;
+
+    // Replaces a word the recogniser got wrong. Everything derived from the text
+    // - the raw text, the selection, the checksummed fields - follows.
+    Q_INVOKABLE void correctWord(int index, const QString &text);
 
     // languages is Tesseract's own spelling: "fra" or "fra+eng".
     // autoRotate tries the page at 90 and 270 degrees as well, and keeps

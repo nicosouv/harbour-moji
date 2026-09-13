@@ -53,3 +53,16 @@ add_executable(tst_imageprep
 target_include_directories(tst_imageprep PRIVATE ${MOJI_SRC})
 target_link_libraries(tst_imageprep Qt5::Core Qt5::Gui Qt5::Test)
 add_test(NAME imageprep COMMAND tst_imageprep)
+
+# Correcting a misread word, and the chain it has to travel: the raw text, any
+# selection containing it, and the checksummed fields. The case worth having is a
+# misread IBAN turning from "does not match" to "verified".
+add_executable(tst_correction
+    ${CMAKE_CURRENT_LIST_DIR}/tst_correction.cpp
+    ${MOJI_SRC}/ocrresult.cpp
+    ${MOJI_SRC}/textlayout.cpp
+    ${MOJI_SRC}/fieldparser.cpp
+)
+target_include_directories(tst_correction PRIVATE ${MOJI_SRC})
+target_link_libraries(tst_correction Qt5::Core Qt5::Gui Qt5::Test)
+add_test(NAME correction COMMAND tst_correction)

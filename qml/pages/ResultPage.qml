@@ -1,4 +1,8 @@
-import QtQuick 2.0
+// 2.5, not 2.0: Image.autoTransform arrived with Qt 5.5 and a QML import states
+// the version whose API it is asking for, not the one the device happens to have.
+// Sailfish ships Qt 5.6, so 2.5 resolves - but importing 2.0 and using a 2.5
+// property fails the whole file at load with "is not available in QtQuick 2.0".
+import QtQuick 2.5
 import Sailfish.Silica 1.0
 import Mochi 1.0
 
@@ -17,6 +21,13 @@ Page {
     // rotation and zoom without being recomputed.
     property int currentScope: 0
     property var selection: ({ valid: false })
+
+    // Which block the text panel is restricted to, or -1 for the whole page.
+    //
+    // Photograph a leaflet and the column next door arrives too. Tesseract already
+    // separated them; this simply lets the user say which one they meant, which is
+    // cheaper and more accurate than cropping the photo and reading it again.
+    property int onlyBlock: -1
 
     // Saying which unit is selected is what makes the second tap understandable.
     // Without it the box just gets bigger and the user has to infer the rule.
@@ -165,6 +176,60 @@ Page {
                     }
                 }
 
+                // The blocks, outlined so they can be picked. Only when there is
+                // a choice to make: one block is the whole photo and outlining it
+                // says nothing.
+                Repeater {
+                    model: (page.selection.valid === true || ocr.blocks.length < 2)
+                           ? [] : ocr.blocks
+
+                    delegate: Rectangle {
+                        x: canvas.offsetX + modelData.x * canvas.ratio
+                        y: modelData.y * canvas.ratio
+                        width: modelData.width * canvas.ratio
+                        height: modelData.height * canvas.ratio
+
+                        color: page.onlyBlock === modelData.block
+                               ? Theme.rgba(Tokens.onColor, 0.18) : "transparent"
+                        border.width: Tokens.hairline * 2
+                        border.color: page.onlyBlock === modelData.block
+                                      ? Tokens.onColor
+                                      : Theme.rgba(Tokens.accentColor, 0.55)
+                        radius: Tokens.hairline * 3
+
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: {
+                                page.onlyBlock = page.onlyBlock === modelData.block
+                                                 ? -1 : modelData.block
+                            }
+                        }
+                    }
+                }
+
+                // The words the recogniser doubted, tinted and tappable. Only the
+                // doubtful ones: the rest are not worth an item each.
+                Repeater {
+                    model: page.selection.valid === true ? [] : ocr.uncertainWords
+
+                    delegate: Rectangle {
+                        x: canvas.offsetX + modelData.x * canvas.ratio
+                        y: modelData.y * canvas.ratio
+                        width: modelData.width * canvas.ratio
+                        height: modelData.height * canvas.ratio
+                        radius: Tokens.hairline * 2
+
+                        color: Theme.rgba(Theme.errorColor, 0.30)
+                        border.width: Tokens.hairline
+                        border.color: Theme.errorColor
+
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: page.editWord(modelData.index, modelData.text)
+                        }
+                    }
+                }
+
                 // The current selection, drawn over the photo in image
                 // coordinates scaled to the screen.
                 Rectangle {
@@ -278,6 +343,28 @@ Page {
             Label {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
+                visible: ocr.blocks.length > 1 && page.selection.valid !== true
+                wrapMode: Text.Wrap
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: Tokens.secondaryColor
+                text: page.onlyBlock >= 0
+                      ? qsTr("Showing one block. Tap its outline again for the whole page.")
+                      : qsTr("Outlined areas are separate blocks of text. Tap one to keep only it.")
+            }
+
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                visible: ocr.uncertainCount > 0 && page.selection.valid !== true
+                wrapMode: Text.Wrap
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: Theme.errorColor
+                text: qsTr("Words marked in red were hard to read. Tap one to retype it.")
+            }
+
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
                 visible: !ocr.busy && ocr.wordCount === 0 && ocr.lastError === ""
                 wrapMode: Text.Wrap
                 font.pixelSize: Theme.fontSizeSmall
@@ -320,7 +407,7 @@ Page {
 
             GroupPanel {
                 width: parent.width
-                title: qsTr("All text")
+                title: page.onlyBlock >= 0 ? qsTr("Selected block") : qsTr("All text")
                 visible: ocr.wordCount > 0
 
                 Item {
@@ -342,7 +429,7 @@ Page {
                         // in front of the camera, so rendering it as markup would
                         // let a photographed <img> tag decide what this device
                         // fetches. scripts/check_qml.py fails the build on it.
-                        text: ocr.text
+                        text: ocr.textOfBlock(page.onlyBlock)
                         wrapMode: Text.Wrap
                         font.pixelSize: Theme.fontSizeExtraSmall
                         color: Tokens.primaryColor
@@ -350,6 +437,15 @@ Page {
                 }
             }
         }
+    }
+
+    function editWord(index, current) {
+        var dialog = pageStack.push(Qt.resolvedUrl("CorrectWordDialog.qml"),
+                                    { wordIndex: index, wordText: current })
+        dialog.accepted.connect(function () {
+            ocr.correctWord(dialog.wordIndex, dialog.wordText)
+            banner.show(qsTr("Corrected"))
+        })
     }
 
     Banner {

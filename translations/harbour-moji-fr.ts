@@ -56,6 +56,21 @@
     </message>
 </context>
 <context>
+    <name>CorrectWordDialog</name>
+    <message>
+        <source>Correct</source>
+        <translation>Corriger</translation>
+    </message>
+    <message>
+        <source>This word was hard to read. What does it say?</source>
+        <translation>Ce mot a été difficile à lire. Que dit-il ?</translation>
+    </message>
+    <message>
+        <source>Word</source>
+        <translation>Mot</translation>
+    </message>
+</context>
+<context>
     <name>MainPage</name>
     <message>
         <source>About</source>
@@ -164,6 +179,10 @@
         <translation>Copier tout le texte</translation>
     </message>
     <message>
+        <source>Corrected</source>
+        <translation>Corrigé</translation>
+    </message>
+    <message>
         <source>Found</source>
         <translation>Détecté</translation>
     </message>
@@ -180,6 +199,10 @@
         <translation>Aucun texte trouvé sur cette photo. Plus de lumière et un cadrage plus serré suffisent généralement — ou vérifiez la langue dans les paramètres.</translation>
     </message>
     <message>
+        <source>Outlined areas are separate blocks of text. Tap one to keep only it.</source>
+        <translation>Les zones encadrées sont des blocs de texte distincts. Touchez-en un pour ne garder que celui-là.</translation>
+    </message>
+    <message>
         <source>Paragraph</source>
         <translation>Paragraphe</translation>
     </message>
@@ -192,8 +215,16 @@
         <translation>Lecture…</translation>
     </message>
     <message>
+        <source>Selected block</source>
+        <translation>Bloc sélectionné</translation>
+    </message>
+    <message>
         <source>Selection</source>
         <translation>Sélection</translation>
+    </message>
+    <message>
+        <source>Showing one block. Tap its outline again for the whole page.</source>
+        <translation>Un seul bloc affiché. Touchez son cadre à nouveau pour toute la page.</translation>
     </message>
     <message>
         <source>Tap a word in the photo. Tap it again to take the whole line, then the paragraph.</source>
@@ -206,6 +237,10 @@
     <message>
         <source>Word</source>
         <translation>Mot</translation>
+    </message>
+    <message>
+        <source>Words marked in red were hard to read. Tap one to retype it.</source>
+        <translation>Les mots en rouge ont été difficiles à lire. Touchez-en un pour le retaper.</translation>
     </message>
 </context>
 <context>

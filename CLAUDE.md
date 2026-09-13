@@ -75,6 +75,12 @@ slogan — as a build rule:
   yields word, line, paragraph and block boxes with a confidence each. Tapping a
   word and growing the selection to its real block is only possible because that
   structure exists — a detector/recogniser pair returns strings and nothing else.
+- **A QML import states the API version being asked for, not the one the device
+  has.** Sailfish ships Qt 5.6, so `import QtQuick 2.5` resolves - but a file that
+  says `2.0` and uses a 2.5 property does not merely lose that property: the whole
+  file fails to load, the page comes up blank, and the reason is one line in the
+  journal. `Image.autoTransform` cost a release this way;
+  `scripts/check_qml.py` now knows the version each such property needs.
 - **EXIF orientation is not applied by anything, by default.** A phone writes a
   portrait photo as the sensor's landscape frame plus a tag; `QImage(path)` ignores
   the tag, and so does QML's `Image` unless `autoTransform: true`. Both sides have

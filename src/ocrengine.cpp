@@ -365,6 +365,67 @@ QVariantList OcrEngine::lines() const
     return list;
 }
 
+QVariantList OcrEngine::uncertainWords() const
+{
+    QVariantList list;
+    for (int index : m_result.uncertainWords()) {
+        const OcrWord &word = m_result.words().at(index);
+        QVariantMap map;
+        map.insert(QStringLiteral("index"), index);
+        map.insert(QStringLiteral("text"), word.text);
+        map.insert(QStringLiteral("confidence"), word.confidence);
+        map.insert(QStringLiteral("x"), word.box.x());
+        map.insert(QStringLiteral("y"), word.box.y());
+        map.insert(QStringLiteral("width"), word.box.width());
+        map.insert(QStringLiteral("height"), word.box.height());
+        list.append(map);
+    }
+    return list;
+}
+
+int OcrEngine::uncertainCount() const
+{
+    return m_result.uncertainWords().size();
+}
+
+QVariantList OcrEngine::blocks() const
+{
+    QVariantList list;
+    for (int block : m_result.blockNumbers()) {
+        const QRect box = m_result.blockBox(block);
+        QVariantMap map;
+        map.insert(QStringLiteral("block"), block);
+        map.insert(QStringLiteral("words"), m_result.wordsInBlock(block).size());
+        map.insert(QStringLiteral("x"), box.x());
+        map.insert(QStringLiteral("y"), box.y());
+        map.insert(QStringLiteral("width"), box.width());
+        map.insert(QStringLiteral("height"), box.height());
+        list.append(map);
+    }
+    return list;
+}
+
+QString OcrEngine::textOfBlock(int block) const
+{
+    return block < 0 ? m_result.text() : m_result.blockText(block);
+}
+
+void OcrEngine::correctWord(int index, const QString &text)
+{
+    if (m_busy) {
+        // The worker owns the result while it runs; editing it underneath would
+        // be overwritten when the pass finishes, if it did not corrupt it first.
+        return;
+    }
+
+    m_result.setWordText(index, text);
+    qCDebug(lcMoji) << "corrected word" << index << "to" << text;
+
+    // One signal drives the text, the selection, the confidence and the field
+    // scan, because all of them are computed from the result rather than cached.
+    emit resultChanged();
+}
+
 int OcrEngine::growScope(int scope) const
 {
     return TextLayout::grow(static_cast<TextLayout::Scope>(scope));

@@ -67,6 +67,34 @@ QVector<int> OcrResult::wordsInLine(int line) const { return indicesOf(&OcrWord:
 QVector<int> OcrResult::wordsInParagraph(int paragraph) const { return indicesOf(&OcrWord::paragraph, paragraph); }
 QVector<int> OcrResult::wordsInBlock(int block) const { return indicesOf(&OcrWord::block, block); }
 
+void OcrResult::setWordText(int index, const QString &text)
+{
+    if (index < 0 || index >= m_words.size()) {
+        return;
+    }
+
+    OcrWord &word = m_words[index];
+    word.text = text;
+    word.corrected = true;
+
+    // A retyped word is as certain as anything on the page gets. Leaving the
+    // recogniser's score would keep it highlighted as doubtful after the user has
+    // just told us what it says.
+    word.confidence = 100.0f;
+}
+
+QVector<int> OcrResult::uncertainWords(float threshold) const
+{
+    QVector<int> indices;
+    for (int i = 0; i < m_words.size(); ++i) {
+        const OcrWord &word = m_words.at(i);
+        if (!word.corrected && word.confidence < threshold) {
+            indices.append(i);
+        }
+    }
+    return indices;
+}
+
 QVector<int> OcrResult::lineNumbers() const
 {
     QVector<int> numbers;
@@ -80,6 +108,44 @@ QVector<int> OcrResult::lineNumbers() const
         }
     }
     return numbers;
+}
+
+QVector<int> OcrResult::blockNumbers() const
+{
+    QVector<int> numbers;
+    for (const OcrWord &word : m_words) {
+        if (!numbers.contains(word.block)) {
+            numbers.append(word.block);
+        }
+    }
+    return numbers;
+}
+
+QString OcrResult::blockText(int block) const
+{
+    QString out;
+    int previousLine = -1;
+    int previousParagraph = -1;
+
+    for (const OcrWord &word : m_words) {
+        if (word.block != block) {
+            continue;
+        }
+        if (previousLine < 0) {
+            // First word of the block.
+        } else if (word.paragraph != previousParagraph) {
+            out += QLatin1String("\n\n");
+        } else if (word.line != previousLine) {
+            out += QLatin1Char('\n');
+        } else {
+            out += QLatin1Char(' ');
+        }
+        out += word.text;
+        previousLine = word.line;
+        previousParagraph = word.paragraph;
+    }
+
+    return out;
 }
 
 float OcrResult::lineConfidence(int line) const

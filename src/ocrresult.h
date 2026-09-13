@@ -30,7 +30,17 @@ struct OcrWord
     int line = 0;
     int paragraph = 0;
     int block = 0;
+
+    // Set when the user retyped this word. It stops being offered for correction
+    // and stops counting against the page's confidence: the recogniser's doubt
+    // was about its own reading, and that reading has been replaced.
+    bool corrected = false;
 };
+
+// Below this a word is usually wrong rather than slightly wrong, which is the
+// point at which showing it to the user is worth the interruption. Tesseract's
+// scale is 0-100.
+const float LowConfidence = 70.0f;
 
 class OcrResult
 {
@@ -52,6 +62,19 @@ public:
     void append(const OcrWord &word) { m_words.append(word); }
     void clear();
 
+    // Replaces what a word says, because the user retyped it.
+    //
+    // The correction has to flow everywhere the original did - the raw text, any
+    // selection containing it, and the field scan - which is why it is done here
+    // rather than kept as an overlay somewhere in the UI. Correcting a digit in a
+    // misread IBAN and watching it turn from "does not match" to "verified" is
+    // the whole reason this is worth having.
+    void setWordText(int index, const QString &text);
+
+    // Indices of the words worth offering for correction: low confidence, and not
+    // already corrected.
+    QVector<int> uncertainWords(float threshold = LowConfidence) const;
+
     bool isEmpty() const { return m_words.isEmpty(); }
     int count() const { return m_words.size(); }
 
@@ -69,6 +92,17 @@ public:
     // thousand words and only a few dozen lines, and on a phone that difference
     // is the difference between a smooth overlay and a stuttering one.
     QVector<int> lineNumbers() const;
+
+    // The distinct block numbers, in reading order.
+    //
+    // A block is what the recogniser decided is one piece of writing - a column, a
+    // panel, a caption. Photograph a leaflet and the column next door comes along
+    // as its own block, which is exactly what makes "just this one" possible
+    // without cropping the photo or recognising it twice.
+    QVector<int> blockNumbers() const;
+
+    // The text of one block, joined the way text() joins the whole page.
+    QString blockText(int block) const;
 
     // Mean confidence over one line, for the same reason: a page's weak spots are
     // legible per line and meaningless per word.

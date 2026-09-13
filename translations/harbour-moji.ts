@@ -56,6 +56,21 @@
     </message>
 </context>
 <context>
+    <name>CorrectWordDialog</name>
+    <message>
+        <source>Correct</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>This word was hard to read. What does it say?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Word</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>MainPage</name>
     <message>
         <source>About</source>
@@ -164,6 +179,10 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>Corrected</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Found</source>
         <translation type="unfinished"></translation>
     </message>
@@ -180,6 +199,10 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>Outlined areas are separate blocks of text. Tap one to keep only it.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Paragraph</source>
         <translation type="unfinished"></translation>
     </message>
@@ -192,7 +215,15 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>Selected block</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Selection</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Showing one block. Tap its outline again for the whole page.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -205,6 +236,10 @@
     </message>
     <message>
         <source>Word</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Words marked in red were hard to read. Tap one to retype it.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
