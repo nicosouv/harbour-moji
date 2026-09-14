@@ -54,6 +54,8 @@ directory rather than from a list in the code.
   reported as such, because "look at this line again" is more useful than a
   confident wrong answer.
 
+What is done and what is next: [ROADMAP.md](ROADMAP.md).
+
 ## Installation
 
 Download the RPM for your architecture from
