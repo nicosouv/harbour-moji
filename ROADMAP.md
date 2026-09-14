@@ -3,7 +3,7 @@
 Where Moji OCR is, and what is left. Kept honest: something is only under
 **Done** if it has shipped in a tagged release and been seen working.
 
-Current release: **v0.1.14**. Eight test suites, 128 assertions, all green.
+Current release: **v0.1.14**. Ten test suites, all green.
 
 ## Done
 
@@ -13,10 +13,10 @@ Current release: **v0.1.14**. Eight test suites, 128 assertions, all green.
   Sailjail sandbox refuses every outbound connection — the guarantee is the
   system's, not the developer's. All language data is inside the RPM.
 - **The page is read whichever way up it is.** EXIF orientation is applied on
-  load (nothing in Qt does this by default), then the page is recognised at 0, 90
-  and 270 and the best reading kept — scored by mean confidence times the *square
-  root* of the word count, because a page read sideways finds far more words, all
-  of them fragments.
+  load (nothing in Qt does this by default), then the page is recognised at
+  several angles and the best reading kept — scored by mean confidence times the
+  *square root* of the word count, because a page read sideways finds far more
+  words, all of them fragments.
 - **Fine deskew.** Quarter turns do nothing for a page held at seven degrees,
   which is the usual case. The tilt is measured from the baselines the winning
   pass already reported, the page is read once more straightened, and that result
@@ -71,6 +71,92 @@ Current release: **v0.1.14**. Eight test suites, 128 assertions, all green.
   ambience), Mochi light and Mochi dark. In ambience mode the controls are real
   Silica ones, not lookalikes.
 
+## Landed, not yet seen on a phone
+
+Written, measured off-device against five photographs taken on the phone, and
+green in CI — but nothing here has been held in a hand yet, so none of it is Done.
+This is the list to try.
+
+### Recognition
+
+- **The half turn was missing.** The search tried 0, 90 and 270, so a photograph
+  that arrived upside down could never be read at all. It is not an exotic case:
+  this camera writes an EXIF orientation of 1 on every frame it takes — the
+  sensor's own landscape frame, tagged "no rotation needed" however the phone was
+  held — so which way up a picture arrives is whichever way up the sensor was, and
+  one of the five was exactly inverted.
+- **A page-segmentation mode is stated.** `TessBaseAPI`'s default is
+  `PSM_SINGLE_BLOCK` — the command-line tool overrides it and a library caller who
+  says nothing does not — so every photograph was read as one undivided slab of
+  text.
+- **A sign is not a page, and is asked a different question.** Page mode looks for
+  columns and reading order, and on a photograph of a street sign it returns
+  nothing at all — zero words, at all four angles. Sparse-text mode reads it. Page
+  mode runs first because it is the one that reports structure, and only a
+  photograph that has no structure pays for the second search.
+- **Thresholding is refused when it would find noise.** Local thresholding is the
+  largest free gain on a photograph of a page and the largest free way to ruin one
+  taken at night: a dark frame thresholded against itself is a field of speckle,
+  and the recogniser reads a couple of hundred specks as words. Measured, the two
+  document photographs came out 5.8% and 23.8% ink and the three night ones 41%,
+  45% and 57%, so the image says which case it is.
+- **The default language never once worked.** It was found by comparing
+  `QLocale(code).language()` against the phone's, and `QLocale("fra")` is
+  `QLocale::C`, so nothing ever matched and every phone quietly defaulted to
+  reading English.
+
+Together, on the five photographs that prompted all of this:
+
+| photograph | before | after |
+|---|---|---|
+| magazine page | 69 words at 89.3% | 66 at 91.9% |
+| dense spread | 486 words at 55.0%, 5.0s | 214 at 85.6%, 2.8s |
+| poster, at night | 644 words at 26.6%, 3.9s | 63 at 70.4%, 1.0s |
+| road sign, at night | 939 words at 20.5%, 13.1s | 7 at 67.3%, 0.8s |
+| sign behind a fence | 680 words at 20.9%, 7.3s | 11 at 50.0%, 1.2s |
+
+The times are not a typo. Reading a sign went from thirteen seconds of garbage to
+under a second of text, because the garbage was what was expensive: a thresholded
+night frame gives Tesseract nine hundred specks to think about. The last row is
+still poor — it is a sign behind a wire fence — and it is the argument for item 3
+under **Next**.
+
+### Interface
+
+- **Languages are named, not coded.** The picker said "fra", "ces", "chi_sim",
+  "ell", because it asked QLocale and QLocale cannot answer: its table holds ISO
+  639-1 and Tesseract's codes are ISO 639-2/T. Now a table, all 126 of them, each
+  as its own name plus its English one where the two differ — "Français (French)",
+  "Suomi (Finnish)", "简体中文 (Chinese, Simplified)" — which needs no catalogue
+  entry in either interface language.
+- **Every button says what it does before it does it.** The six glyphs under the
+  photo take two taps: the first names the verb in a bubble over the button it
+  belongs to, the second runs it. A row of unlabelled squares is unreadable until
+  you have learnt it, and the way to learn it used to be a press-and-hold — a
+  gesture you have to already know about in order to discover anything. Nothing
+  fires from a tap that was only a question, which matters most for the two verbs
+  that write a file.
+- **The photo is shown the way it was read.** Nothing upstream knows which way up
+  a photograph is, so the preview came up sideways while the text came out fine.
+  The recogniser finds the answer on the way past; the view uses it. The rotate
+  button still wins afterwards.
+- **A binding loop that had not been reached yet.** The frame holding the photo
+  took its height from the canvas's width while the canvas took its width from the
+  frame's height — the kind of bug that reads on a device as the page having
+  stopped rather than as anything being wrong. It was only reachable by tapping
+  "rotate the view", which is presumably why it survived; the view now turns itself
+  on every photograph, so it was about to be on the ordinary path.
+
+### Not measurable from here
+
+- **The camera tags which way up it was.** Nothing set the capture orientation, so
+  the camera wrote EXIF 1 on every frame. It is set now — and this is the one item
+  that could not be checked, because the mapping from how the phone is held to the
+  tag has a single anchor: a page shot in portrait needed a quarter turn clockwise.
+  The other three orientations follow by symmetry and are guesses. Nothing depends
+  on it: a tag that comes out backwards costs a wrong thumbnail in the gallery,
+  because the recogniser searches all four angles regardless.
+
 ## Next
 
 In the order I would do them.
@@ -82,17 +168,45 @@ In the order I would do them.
    noarch RPMs, one per script group, attached to the release. No cross-compile
    needed — they are data. **96 languages are unreachable until this lands.**
 2. **`osd.traineddata` as a pack.** It would give orientation *and* script in one
-   pass instead of three, cutting recognition time by roughly two thirds. 10MB,
+   pass instead of four, cutting recognition time by roughly three quarters. 10MB,
    and an unverified question about whether it survives the `--disable-legacy`
    the engine is built with — which is why it is a pack and not a default.
-3. **Comparing two photos of the same document**, to see what changed between two
+3. **A scene-text engine, beside Tesseract rather than instead of it.** Started:
+   `src/scenetext.h` holds the decision record and the detector's output stage,
+   which is the part with no neural network in it and therefore the part `tests/`
+   can reach.
+
+   The case for it is measured rather than assumed. Tesseract is a document
+   recogniser; asked for a page, it returns *zero words* from a night photograph
+   of a street sign, at all four angles. Sparse-text mode rescues that to seven
+   words at 67%, which is the difference between useless and poor, and that is
+   where tuning ends. A detector/recogniser pair is built for the other case: one
+   model says where the text is, another reads each piece, and nothing has to look
+   like a page.
+
+   ncnn for the runtime — C++11, no dependencies, cross-compiles the way Leptonica
+   and Tesseract already do in `3rdparty/`, and a few hundred kilobytes against
+   ONNX Runtime's fifteen megabytes and its demand for a newer toolchain than the
+   SDK has. PP-OCR mobile for the models: DBNet to detect at about 4.7MB, SVTR-LCNet
+   to read at about 10MB, downloaded at build time against a pinned SHA256 exactly
+   as the language data is, and still not one outbound request from the app.
+
+   What is left: the ncnn cross-compile script, the model pinning, the thin call
+   that produces the probability map, and the recognition half. It does not
+   replace Tesseract and is not meant to — a detector/recogniser pair returns
+   strings and boxes and no structure, and tapping a word to grow the selection to
+   its paragraph needs paragraphs to exist.
+4. **Comparing two photos of the same document**, to see what changed between two
    versions of a contract.
 
 ## Known limits
 
-- **Three recognition passes cost time.** A large photo takes several seconds
-  because the page is tried three ways up. The first pass short-circuits when it
-  comes out clearly good, so this is only paid on a difficult page — but it is
+- **Four recognition passes, and a difficult photo can cost eight.** The page is
+  tried all four ways up, and a photograph that reads as nothing in page mode is
+  tried all four again in sparse-text mode. This turned out to be *faster* than the
+  three passes it replaced, on every photograph measured, because the passes that
+  were slow were the ones finding hundreds of specks — but that is a happy accident
+  of these five and not a guarantee. A large photo still takes seconds, and it is
   paid exactly when the user is already waiting.
 - **The deskew has not been proven on a hard case.** It is covered by tests and
   it keeps its result only when it scores better, so it cannot make things worse;
@@ -120,5 +234,6 @@ one is now caught in CI rather than on a phone:
 | `Image.autoTransform` under `import QtQuick 2.0` | `check_qml.py` knows each property's minimum QtQuick |
 | `QDateTime::currentSecsSinceEpoch`, added in Qt 5.8 | `check_qt56.py` holds the list of APIs newer than 5.6 |
 | A `tr()` filed under the wrong context | `check_translations.py` anchors C++ contexts to column zero |
+| Two items sizing each other across the two dimensions | `check_qml.py` follows the size bindings between ids and refuses a cycle |
 
 The list grows rather than shrinks.

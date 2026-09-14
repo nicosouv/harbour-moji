@@ -118,3 +118,29 @@ add_executable(tst_redact
 target_include_directories(tst_redact PRIVATE ${MOJI_SRC})
 target_link_libraries(tst_redact Qt5::Core Qt5::Gui Qt5::Test)
 add_test(NAME redact COMMAND tst_redact)
+
+# Naming a Tesseract language code. The picker listed "fra", "ces", "ell" and
+# "chi_sim" because QLocale cannot resolve ISO 639-2/T, and the same hole made a
+# French phone default to reading English. One assertion here tests the premise
+# rather than the code: if a future Qt learns those codes, the table can go.
+add_executable(tst_languagenames
+    ${CMAKE_CURRENT_LIST_DIR}/tst_languagenames.cpp
+    ${MOJI_SRC}/languagenames.cpp
+)
+target_include_directories(tst_languagenames PRIVATE ${MOJI_SRC})
+target_link_libraries(tst_languagenames Qt5::Core Qt5::Test)
+add_test(NAME languagenames COMMAND tst_languagenames)
+
+# Turning a text detector's probability map into boxes: the first piece of the
+# scene-text engine, and the piece with no neural network in it. Every decision
+# the detector's output stage makes is here - which pixels are text, how far a box
+# is grown back past the blob DBNet was trained to shrink, and the scaling from
+# the model's fixed input size to the photograph, which is the one that fails by
+# landing every box slightly wrong rather than by failing.
+add_executable(tst_scenetext
+    ${CMAKE_CURRENT_LIST_DIR}/tst_scenetext.cpp
+    ${MOJI_SRC}/scenetext.cpp
+)
+target_include_directories(tst_scenetext PRIVATE ${MOJI_SRC})
+target_link_libraries(tst_scenetext Qt5::Core Qt5::Gui Qt5::Test)
+add_test(NAME scenetext COMMAND tst_scenetext)

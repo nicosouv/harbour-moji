@@ -32,6 +32,12 @@ RPMS/
 # in a git history - the app ships them, the repo does not carry them.
 tessdata/
 
+# Photographs to measure the recognition pipeline against, dropped in by hand.
+# The same rule as the language data: they are 26MB of camera JPEGs and the
+# history is not the place for them. tests/fixtures/portrait_exif.jpg is the
+# exception and is committed - it is 1.8KB and it exists to pin one EXIF tag.
+tests/fixtures/IMG_*.jpg
+
 # Build directories
 build/
 .obj/

@@ -124,6 +124,20 @@ docker run --rm -v "$PWD:/src:ro" -w /work ubuntu:24.04 bash -c '
   QT_QPA_PLATFORM=offscreen ctest --test-dir build-tests --output-on-failure'
 ```
 
+### Measuring recognition against real photographs
+
+The tests cover the layers that decide things; they cannot tell you whether a
+photograph reads better. For that, put some JPEGs in `tests/fixtures/` — they are
+gitignored, the repo carries no binaries — and run the pipeline over them with a
+host Tesseract, adding `libtesseract-dev libleptonica-dev` to the packages above.
+`src/imageprep.cpp` compiles against plain Qt5, so the same preparation the app
+does can be reproduced exactly without an SDK or a device.
+
+This is not optional diligence. `PSM_SINGLE_BLOCK` survived fourteen releases
+because nothing ever measured it; five photographs and an hour found it, the
+missing 180° pass, and a thresholding step that was destroying every photograph
+taken at night.
+
 ### Native dependencies
 
 `scripts/build_leptonica.sh` and `scripts/build_tesseract.sh` cross-compile them

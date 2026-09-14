@@ -52,6 +52,13 @@ slogan — as a build rule:
   rather than behind a button, and that is the gesture Mochi is for. Putting a
   page's verbs in the pulley is the Silica habit being replaced, and it is the easy
   mistake because a pulley is the quickest place to put something.
+- **A photograph to measure against is worth more than an argument about
+  recognition quality.** Everything above about segmentation modes, thresholding
+  and rotation came out of five JPEGs and an hour of running the real pipeline over
+  them in a container - Tesseract, plain Qt5 and the app's own `imageprep.cpp`, no
+  SDK and no device. Drop photographs in `tests/fixtures/` (gitignored: the repo
+  carries no binaries) and measure. Guessing at this is how PSM_SINGLE_BLOCK
+  survived fourteen releases.
 - **Two language lists, and they are not the same list.** The *interface* is
   English and French; every new `qsTr()` or `tr()` needs an entry in both
   catalogues, and `scripts/check_translations.py` names the ones you missed. The
@@ -130,6 +137,13 @@ slogan — as a build rule:
 - Mapping a box out of an arbitrary rotation uses `QImage::trueMatrix`, never a
   hand-built transform: Qt translates the rotated result to keep it at the origin
   and that offset is not worth re-deriving.
+- **The second binding loop was two items sizing each other across dimensions.**
+  The frame holding the photo took its height from the canvas's width, while the
+  canvas took its width from the frame's height. Same failure as below, and it
+  survived because it was only reachable by tapping "rotate the view" - which
+  nothing did until the view started turning itself. `check_qml.py` now follows
+  size bindings between ids and refuses a cycle. Break one by deriving both ends
+  from something outside the pair.
 - **A binding loop does not look like a bug, it looks like a hang.** Qt prints
   "Binding loop detected" once and then keeps re-evaluating the layout, so on a
   device the page appears frozen and the log line scrolls past unread. The one
@@ -155,6 +169,59 @@ slogan — as a build rule:
   recording a photo that turned out to have no text in it failed silently until a
   test caught it. Coerce, or make the column nullable - but decide, rather than
   finding out.
+- **Tesseract's API default page-segmentation mode is `PSM_SINGLE_BLOCK`, not
+  `PSM_AUTO`.** The command-line tool sets 3 before every run; a library caller who
+  says nothing gets 6, and 6 means "this whole image is one uniform block of text".
+  This engine never set one, so every photograph was read that way for fourteen
+  releases. Always state the mode.
+  Worth knowing about the shape of the damage: on a clean page held the right way
+  up, 6 is nearly as good as 3 - 69 words at 89.3% against 66 at 91.9%. What it
+  costs is everything else. Where 6 goes wrong it does not find less, it finds
+  hundreds of things it does not believe, and `conf * sqrt(n)` then *prefers* that
+  reading. The pipeline before and after the whole set of changes, same five
+  photographs, same language data:
+
+  | photograph | before | after |
+  |---|---|---|
+  | magazine page | 69 words at 89.3% | 66 at 91.9% |
+  | dense spread | 486 words at 55.0%, 5.0s | 214 at 85.6%, 2.8s |
+  | poster, at night | 644 words at 26.6%, 3.9s | 63 at 70.4%, 1.0s |
+  | road sign, at night | 939 words at 20.5%, 13.1s | 7 at 67.3%, 0.8s |
+  | sign behind a fence | 680 words at 20.9%, 7.3s | 11 at 50.0%, 1.2s |
+
+  Note the times. Reading a sign went from thirteen seconds of garbage to under a
+  second of text, because the garbage was what was expensive.
+- **A sign is not a page, and page mode returns nothing at all on one.** Not "worse
+  results" - zero words, at every angle, on a photograph of a street sign.
+  `PSM_SPARSE_TEXT` reads it. But sparse mode reports no blocks and no paragraphs,
+  and the tap-to-widen gesture and the table extractor are built on those, so page
+  mode runs first and only a photograph that came back with nothing pays for the
+  second search.
+- **This camera writes EXIF orientation 1 on everything.** Five photographs off the
+  device, all 8192x6144 - the sensor's own landscape frame - all tagged as needing
+  no rotation, whichever way the phone was held. So `loadUpright` and
+  `Image.autoTransform` are both working correctly and both doing nothing, and the
+  angle search is not a refinement on top of EXIF: it is the only thing in the app
+  that knows which way up a photograph is. Which is why the search must cover all
+  four quarter turns - 180 was missing, and a sign photographed upside down could
+  never be read. And why the result page turns the view to `ocr.orientation`: the
+  recogniser is the only thing that found out.
+- **Local thresholding is the largest free gain on a page and ruins a photograph
+  taken at night.** In a dark frame every speck of sensor noise is darker than its
+  neighbours, so Bradley-Roth marks all of it: measured, two document photographs
+  came out 5.8% and 23.8% ink, three night ones 41%, 45% and 57%. Tesseract then
+  called 189 specks words at 17% confidence - and `conf * sqrt(n)` rated that above
+  the seven real words the untouched image gave, so the score picked the garbage.
+  The fix is not a better score, it is not thresholding an image that is mostly
+  noise; `ImagePrep::MaxInk` is where that line sits, and the numbers above are
+  where it came from.
+- **QLocale cannot resolve Tesseract's language codes.** `QLocale("fra")` is
+  `QLocale::C`: Qt's table holds ISO 639-1 and Tesseract uses ISO 639-2/T. Anything
+  built on that comparison silently does nothing - the picker listed "fra", "ces",
+  "chi_sim" for fourteen releases, and the "default follows the phone's language"
+  behaviour never once fired, so a French phone read French pages as English.
+  `src/languagenames.h` is the table, and one test asserts the QLocale hole itself
+  so the table can be deleted if a future Qt closes it.
 - **Tesseract is not state of the art, and knowing where it is weak is the job.**
   It is trained on clean scans near 300 DPI; a hand-held photo of a glossy page at
   an angle is close to its worst case. Three levers, in order of value: local

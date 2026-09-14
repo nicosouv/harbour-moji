@@ -50,6 +50,8 @@ set(CORE_SOURCES
     src/fieldparser.cpp
     src/imageprep.cpp
     src/tableextract.cpp
+    src/languagenames.cpp
+    src/scenetext.cpp
 )
 
 set(CORE_HEADERS
@@ -58,6 +60,8 @@ set(CORE_HEADERS
     src/fieldparser.h
     src/imageprep.h
     src/tableextract.h
+    src/languagenames.h
+    src/scenetext.h
 )
 
 set(SOURCES
