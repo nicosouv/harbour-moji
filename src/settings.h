@@ -77,11 +77,10 @@ public:
 
     // A readable name for a Tesseract language code, for the picker.
     //
-    // Resolved through QLocale rather than a table of 126 names: QLocale already
-    // knows them, already has them translated, and a table would be 126 lines to
-    // maintain plus a line per language pack anyone ever adds. Codes QLocale
-    // cannot place - "chi_sim", "jpn_vert" - fall back to the base code and then
-    // to the code itself, which is honest rather than wrong.
+    // Answered by src/languagenames.h, which is a table. QLocale was tried first
+    // and cannot do it: QLocale("fra") resolves nothing, because Qt's table holds
+    // ISO 639-1 and Tesseract's codes are ISO 639-2/T. Every language fell through
+    // to the fallback and the picker listed the codes.
     Q_INVOKABLE QString languageName(const QString &code) const;
 
     // Re-read the tessdata directory. Worth calling when the app returns to the

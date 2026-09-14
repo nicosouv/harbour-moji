@@ -1,5 +1,6 @@
 #include "settings.h"
 
+#include "languagenames.h"
 #include "logging.h"
 
 #include <QDir>
@@ -64,16 +65,16 @@ QStringList Settings::ocrLanguages() const
 
     // Never chosen, so guess from the phone's own language: someone reading a
     // French page on a French phone should not have to find a setting first, and
-    // defaulting to English made every accented word a small error.
+    // defaulting to English makes every accented word a small error.
     //
-    // Matched through QLocale rather than a table of codes - the same trick
-    // languageName() uses - so this keeps working for any language pack installed
-    // later without being taught about it.
-    const QLocale::Language systemLanguage = QLocale::system().language();
-    for (const QString &code : m_installedLanguages) {
-        if (QLocale(code).language() == systemLanguage) {
-            return QStringList { code };
-        }
+    // This used to compare QLocale(code).language() against the system's, which
+    // never matched anything: QLocale("fra") is QLocale::C, so a French phone
+    // quietly read French pages as English. LanguageNames does the matching on the
+    // ISO 639-1 code instead, which is the half QLocale actually speaks.
+    const QString guess = LanguageNames::codeForLocale(QLocale::system(),
+                                                       m_installedLanguages);
+    if (!guess.isEmpty()) {
+        return QStringList { guess };
     }
 
     return QStringList { QStringLiteral("eng") };
@@ -121,10 +122,10 @@ void Settings::refreshInstalledLanguages()
                                             QDir::Files, QDir::Name);
     for (const QString &file : files) {
         const QString code = QFileInfo(file).completeBaseName();
-        // osd is orientation and script detection, not a language anyone reads
-        // in. Offering it as a choice would be offering to recognise text with a
-        // model that recognises no text.
-        if (code == QLatin1String("osd")) {
+        // osd detects orientation and script, equ detects mathematics. Neither
+        // reads text, so offering either as a language would be offering to
+        // recognise text with a model that recognises none.
+        if (!LanguageNames::isReadable(code)) {
             continue;
         }
         found.append(code);
@@ -141,27 +142,7 @@ void Settings::refreshInstalledLanguages()
 
 QString Settings::languageName(const QString &code) const
 {
-    // Exact code first: QLocale understands the three-letter ISO 639-2 codes
-    // Tesseract uses for most of its languages.
-    QLocale locale(code);
-    if (locale.language() != QLocale::C) {
-        return locale.nativeLanguageName();
-    }
-
-    // Then the part before the qualifier, which is what "chi_sim", "chi_tra" and
-    // the "_vert" variants are: a language QLocale knows, plus a script or writing
-    // direction it does not express this way.
-    const int underscore = code.indexOf(QLatin1Char('_'));
-    if (underscore > 0) {
-        QLocale base(code.left(underscore));
-        if (base.language() != QLocale::C) {
-            return base.nativeLanguageName() + QStringLiteral(" (")
-                   + code.mid(underscore + 1) + QLatin1Char(')');
-        }
-    }
-
-    // Neither: show the code. A wrong name would be worse than a raw one.
-    return code;
+    return LanguageNames::displayName(code);
 }
 
 bool Settings::enhanceContrast() const
