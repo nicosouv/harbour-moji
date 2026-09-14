@@ -1,4 +1,5 @@
 #include <QtTest>
+#include <QSet>
 #include <QLineF>
 #include <QTransform>
 #include <QtMath>
@@ -44,6 +45,10 @@ private slots:
     void toSourceRectUndoesTheScale();
     void toSourceRectKeepsTouchingBoxesTouching();
     void roundTripLandsWithinAPixel();
+
+    void inkFractionCountsTheBlack();
+    void binarisingHelpsAPage();
+    void binarisingIsRefusedOnNoise();
 
     void loadUprightAppliesTheExifTag();
     void rotatedTurnsTheImage();
@@ -437,6 +442,76 @@ void TestImagePrep::binarisedLeavesOtherFormatsAlone()
     // untouched rather than produce nonsense.
     const QImage colour = photo(50, 50);
     QCOMPARE(binarised(colour).format(), colour.format());
+}
+
+void TestImagePrep::inkFractionCountsTheBlack()
+{
+    QImage bw(10, 10, QImage::Format_Grayscale8);
+    bw.fill(255);
+    QCOMPARE(inkFraction(bw), 0.0);
+
+    // A tenth of it black.
+    for (int x = 0; x < 10; ++x) {
+        bw.scanLine(0)[x] = 0;
+    }
+    QVERIFY(qAbs(inkFraction(bw) - 0.1) < 1e-9);
+
+    bw.fill(0);
+    QCOMPARE(inkFraction(bw), 1.0);
+}
+
+void TestImagePrep::binarisingHelpsAPage()
+{
+    // A page: pale, with dark marks on a little of it. Thresholding this is the
+    // whole reason the function exists, so it has to come back thresholded.
+    QImage page(200, 200, QImage::Format_Grayscale8);
+    page.fill(230);
+    for (int y = 20; y < 40; ++y) {
+        for (int x = 20; x < 180; ++x) {
+            page.scanLine(y)[x] = 30;
+        }
+    }
+
+    const QImage out = binarisedIfItHelps(page);
+    QCOMPARE(out.format(), QImage::Format_Grayscale8);
+
+    // Two levels and nothing between: it was thresholded, not returned.
+    QSet<int> levels;
+    for (int y = 0; y < out.height(); ++y) {
+        for (int x = 0; x < out.width(); ++x) {
+            levels.insert(out.constScanLine(y)[x]);
+        }
+    }
+    QVERIFY(levels.contains(0));
+    QVERIFY(levels.contains(255));
+    QCOMPARE(levels.size(), 2);
+    QVERIFY(inkFraction(out) <= MaxInk);
+}
+
+void TestImagePrep::binarisingIsRefusedOnNoise()
+{
+    // A photograph taken at night: dark everywhere, with sensor noise on top and
+    // no page in it. Thresholding against the local average marks roughly half
+    // of that as ink, and Tesseract reads a couple of hundred specks as words -
+    // which used to beat the handful of real words in the untouched image,
+    // because conf*sqrt(n) rewards a long list of things it does not believe.
+    //
+    // Deterministic noise: a test that fails one run in fifty is worse than none.
+    QImage night(200, 200, QImage::Format_Grayscale8);
+    quint32 seed = 12345;
+    for (int y = 0; y < night.height(); ++y) {
+        uchar *row = night.scanLine(y);
+        for (int x = 0; x < night.width(); ++x) {
+            seed = seed * 1103515245u + 12345u;
+            row[x] = uchar(20 + ((seed >> 16) & 0x3F));
+        }
+    }
+
+    QVERIFY(inkFraction(binarised(night)) > MaxInk);
+
+    // So the image comes back as it went in, pixel for pixel.
+    const QImage out = binarisedIfItHelps(night);
+    QCOMPARE(out, night);
 }
 
 QTEST_APPLESS_MAIN(TestImagePrep)

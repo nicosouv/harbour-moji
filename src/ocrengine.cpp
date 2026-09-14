@@ -81,9 +81,15 @@ void OcrEngine::recogniseRegion(const QUrl &imageUrl, const QString &languages,
                                           autoRotate, enhance, region));
 }
 
-bool OcrEngine::recogniseInto(const QImage &grey, OcrResult *out,
+bool OcrEngine::recogniseInto(const QImage &grey, int pageSegMode, OcrResult *out,
                               QVector<QLineF> *baselines)
 {
+    // Said every time, never assumed. TessBaseAPI's default is PSM_SINGLE_BLOCK -
+    // the command-line tool overrides it to PSM_AUTO and a library caller who says
+    // nothing does not - so this engine spent its life reading every photograph as
+    // one undivided block of text. See the declaration.
+    m_api->SetPageSegMode(static_cast<tesseract::PageSegMode>(pageSegMode));
+
     // Raw pixels straight from the QImage. Leptonica never reads the file, which
     // is why it is built without any image codecs: Qt already decoded it.
     //
@@ -170,6 +176,76 @@ bool OcrEngine::recogniseInto(const QImage &grey, OcrResult *out,
     return true;
 }
 
+QVector<int> OcrEngine::searchAngles(bool autoRotate) const
+{
+    QVector<int> angles;
+    angles << 0;
+    if (autoRotate) {
+        // All three of the others, 180 included.
+        //
+        // 180 was missing, and it is not a rare case: a phone photographs whatever
+        // is in front of it and the Sailfish camera writes an EXIF orientation of
+        // 1 on every frame regardless of how the phone was held, so which way up
+        // the picture arrives is whichever way up the sensor was. A sign
+        // photographed at night came back exactly upside down, and the search
+        // could not try the one angle that would have read it.
+        angles << 90 << 180 << 270;
+    }
+    return angles;
+}
+
+OcrEngine::Attempt OcrEngine::bestOverAngles(const QImage &prepared, qreal scale,
+                                             const QSize &sourceSize,
+                                             bool autoRotate, int pageSegMode)
+{
+    Attempt best;
+
+    const QVector<int> angles = searchAngles(autoRotate);
+    for (int angle : angles) {
+        const QImage grey = ImagePrep::rotated(prepared, angle);
+
+        OcrResult attempt;
+        QVector<QLineF> baselines;
+        if (!recogniseInto(grey, pageSegMode, &attempt, &baselines)) {
+            qCDebug(lcMoji) << "  angle" << angle << "could not be recognised";
+            continue;
+        }
+
+        attempt.setImageSize(sourceSize);
+        attempt.setOrientation(angle);
+
+        // Two transforms back, in order: out of the rotation applied for this
+        // pass, then out of the downscale. Skip either and the overlay lands
+        // somewhere plausible but wrong.
+        for (int i = 0; i < attempt.count(); ++i) {
+            const QRect inPrepared =
+                ImagePrep::unrotateRect(attempt.words().at(i).box, angle, grey.size());
+            attempt.setWordBox(i, ImagePrep::toSourceRect(inPrepared, scale));
+        }
+
+        qCDebug(lcMoji) << "  psm" << pageSegMode << "angle" << angle << ":"
+                        << attempt.count() << "words, confidence"
+                        << attempt.meanConfidence()
+                        << "score" << attempt.readingScore();
+
+        if (!best.found || attempt.readingScore() > best.result.readingScore()) {
+            best.result = attempt;
+            best.angle = angle;
+            best.baselines = baselines;
+            best.found = true;
+        }
+
+        // Good enough on the first try: a page read the right way up is not
+        // marginal, and three more passes on a large photo is seconds of the user
+        // waiting for a result that will not change.
+        if (angle == 0 && attempt.count() >= 8 && attempt.meanConfidence() >= 75.0f) {
+            break;
+        }
+    }
+
+    return best;
+}
+
 OcrEngine::Outcome OcrEngine::run(const QString &path, const QString &languages,
                                  bool autoRotate, bool enhance, QRect region)
 {
@@ -216,7 +292,12 @@ OcrEngine::Outcome OcrEngine::run(const QString &path, const QString &languages,
         // Thresholded against the local average. Tesseract would otherwise apply
         // one threshold to the whole page, which a photograph's lighting gradient
         // defeats - see ImagePrep::binarised.
-        prepared.image = ImagePrep::binarised(prepared.image);
+        //
+        // "IfItHelps", because on a photograph taken at night it does the
+        // opposite: a dark frame thresholded against itself is a field of speckle,
+        // and the recogniser dutifully reads a couple of hundred specks as words.
+        // The image says which case it is - see ImagePrep::MaxInk.
+        prepared.image = ImagePrep::binarisedIfItHelps(prepared.image);
     }
 
     qCDebug(lcMoji) << "prepared" << prepared.image.size()
@@ -282,60 +363,37 @@ OcrEngine::Outcome OcrEngine::run(const QString &path, const QString &languages,
     // needs a 10MB model and it is not clear it survives the --disable-legacy this
     // is built with - so the answer is taken from the recogniser itself, which is
     // the thing that actually knows whether it could read what it was shown.
+    Attempt attempt = bestOverAngles(prepared.image, prepared.scale, source.size(),
+                                     autoRotate, tesseract::PSM_AUTO);
+
+    // Nothing, or next to nothing, at any angle. That is not a bad photograph, it
+    // is the wrong question: PSM_AUTO looks for a page - columns, paragraphs,
+    // reading order - and a street sign is not one. Asked for a page, Tesseract
+    // returns zero words from a photograph of "PASSAGE SURELEVE" at all four
+    // angles; asked for sparse text, it reads it.
     //
-    // The extra passes are only paid for when the first one comes out badly. A
-    // page the right way up is usually obvious immediately.
-    QVector<int> angles;
-    angles << 0;
-    if (autoRotate) {
-        angles << 90 << 270;
-    }
-
-    OcrResult best;
-    int bestAngle = 0;
-    bool haveAny = false;
-    QVector<QLineF> bestBaselines;
-
-    for (int angle : angles) {
-        const QImage grey = ImagePrep::rotated(prepared.image, angle);
-
-        OcrResult attempt;
-        QVector<QLineF> baselines;
-        if (!recogniseInto(grey, &attempt, &baselines)) {
-            qCDebug(lcMoji) << "  angle" << angle << "could not be recognised";
-            continue;
-        }
-
-        attempt.setImageSize(source.size());
-        attempt.setOrientation(angle);
-
-        // Two transforms back, in order: out of the rotation applied for this
-        // pass, then out of the downscale. Skip either and the overlay lands
-        // somewhere plausible but wrong.
-        for (int i = 0; i < attempt.count(); ++i) {
-            const QRect inPrepared =
-                ImagePrep::unrotateRect(attempt.words().at(i).box, angle, grey.size());
-            attempt.setWordBox(i, ImagePrep::toSourceRect(inPrepared, prepared.scale));
-        }
-
-        qCDebug(lcMoji) << "  angle" << angle << ":" << attempt.count() << "words,"
-                        << "confidence" << attempt.meanConfidence()
-                        << "score" << attempt.readingScore();
-
-        if (!haveAny || attempt.readingScore() > best.readingScore()) {
-            best = attempt;
-            bestAngle = angle;
-            bestBaselines = baselines;
-            haveAny = true;
-        }
-
-        // Good enough on the first try: a page read the right way up is not
-        // marginal, and two more passes on a large photo is seconds of the user
-        // waiting for a result that will not change.
-        if (angle == 0 && attempt.count() >= 8 && attempt.meanConfidence() >= 75.0f) {
-            break;
+    // Second, not first, because sparse text is the weaker question: it finds text
+    // anywhere and reports no structure, and the structure is what the whole page
+    // is built on - tapping a word to grow the selection to its paragraph needs
+    // paragraphs to exist. So a page keeps its layout, and only a photograph that
+    // has no layout pays for a second search.
+    if (attempt.result.count() < 4) {
+        qCDebug(lcMoji) << "page mode found" << attempt.result.count()
+                        << "words; trying sparse text";
+        const Attempt sparse = bestOverAngles(prepared.image, prepared.scale,
+                                              source.size(), autoRotate,
+                                              tesseract::PSM_SPARSE_TEXT);
+        if (sparse.found
+            && (!attempt.found
+                || sparse.result.readingScore() > attempt.result.readingScore())) {
+            attempt = sparse;
         }
     }
+
+    OcrResult best = attempt.result;
+    const int bestAngle = attempt.angle;
+    const QVector<QLineF> bestBaselines = attempt.baselines;
+    const bool haveAny = attempt.found;
 
     if (!haveAny) {
         outcome.error = tr("Nothing could be read from that image.");
@@ -359,7 +417,7 @@ OcrEngine::Outcome OcrEngine::run(const QString &path, const QString &languages,
         const ImagePrep::Turned turned = ImagePrep::turnedBy(squared, -skew);
 
         OcrResult straightened;
-        if (recogniseInto(turned.image, &straightened, nullptr)) {
+        if (recogniseInto(turned.image, tesseract::PSM_AUTO, &straightened, nullptr)) {
             straightened.setImageSize(source.size());
             straightened.setOrientation(bestAngle);
 

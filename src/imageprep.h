@@ -119,6 +119,31 @@ const qreal MaxSkew = 20.0;
 QImage binarised(const QImage &grey, qreal windowFraction = 0.125,
                  qreal delta = 0.15);
 
+// How much of a black-and-white image is black, between 0 and 1.
+qreal inkFraction(const QImage &bw);
+
+// Above this, thresholding has not found text - it has found noise.
+//
+// A page of text is a few percent ink; the two document photographs measured
+// here came out at 5.8% and 23.8%, the second being a dense spread with a
+// photograph in the frame. The three night photographs came out at 41%, 45% and
+// 57%, because in a dark frame every speck of sensor noise is darker than its
+// neighbours and the local threshold faithfully marks all of it.
+//
+// The gap is wide and the consequence is not subtle: Tesseract called 189 of
+// those specks words on the sign photograph, at 17% confidence, which was enough
+// to beat the seven real words it found in the same photograph untouched.
+const qreal MaxInk = 0.35;
+
+// Thresholded, or left alone when thresholding it produced noise instead of text.
+//
+// Local thresholding is the largest free improvement available to a photograph of
+// a page and the largest free way to ruin a photograph taken at night. It cannot
+// be decided from the setting alone, because it is the same setting and the same
+// user; it has to be decided from the image. inkFraction measures exactly the
+// thing that goes wrong, so that is what decides it.
+QImage binarisedIfItHelps(const QImage &grey);
+
 // Greyscale, no larger than maxEdge on its long side.
 //
 // Greyscale because Tesseract discards colour anyway, and one byte per pixel

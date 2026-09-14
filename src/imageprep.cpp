@@ -113,6 +113,36 @@ QImage binarised(const QImage &grey, qreal windowFraction, qreal delta)
     return out;
 }
 
+qreal inkFraction(const QImage &bw)
+{
+    if (bw.isNull() || bw.format() != QImage::Format_Grayscale8) {
+        return 0.0;
+    }
+
+    qint64 ink = 0;
+    for (int y = 0; y < bw.height(); ++y) {
+        const uchar *row = bw.constScanLine(y);
+        for (int x = 0; x < bw.width(); ++x) {
+            // binarised() writes 0 or 255 and nothing between, so this is a
+            // count rather than a threshold.
+            if (row[x] == 0) {
+                ++ink;
+            }
+        }
+    }
+
+    return qreal(ink) / (qreal(bw.width()) * bw.height());
+}
+
+QImage binarisedIfItHelps(const QImage &grey)
+{
+    const QImage bw = binarised(grey);
+    if (bw.isNull() || inkFraction(bw) > MaxInk) {
+        return grey;
+    }
+    return bw;
+}
+
 qreal skewAngle(const QVector<QLineF> &baselines)
 {
     QVector<qreal> angles;

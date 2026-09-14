@@ -50,6 +50,16 @@ class OcrEngine : public QObject
     Q_PROPERTY(int wordCount READ wordCount NOTIFY resultChanged)
     Q_PROPERTY(qreal confidence READ confidence NOTIFY resultChanged)
     Q_PROPERTY(QSize imageSize READ imageSize NOTIFY resultChanged)
+
+    // Which way up the photo had to be turned to be read, in degrees clockwise.
+    //
+    // Worth exposing because it is the only thing that knows. The Sailfish camera
+    // writes an EXIF orientation of 1 on every frame it takes - the sensor's own
+    // landscape frame, tagged as needing no rotation, however the phone was held -
+    // so nothing upstream can say which way up the picture is, and the preview
+    // came up sideways while the text came out fine. The recogniser found the
+    // answer on the way past; the view can simply use it.
+    Q_PROPERTY(int orientation READ orientation NOTIFY resultChanged)
     Q_PROPERTY(QString lastError READ lastError NOTIFY lastErrorChanged)
 
     // The structured things found in the text: IBANs, card numbers, ISBNs, a
@@ -89,6 +99,7 @@ public:
     int wordCount() const { return m_result.count(); }
     qreal confidence() const { return m_result.meanConfidence(); }
     QSize imageSize() const { return m_result.imageSize(); }
+    int orientation() const { return m_result.orientation(); }
     QString lastError() const { return m_lastError; }
     QString editedText() const;
     void setEditedText(const QString &text);
@@ -201,9 +212,32 @@ private:
     // coordinates. Both the quarter-turn search and the straightening use it, so
     // the iteration that assembles the hierarchy exists once.
     //
+    // `pageSegMode` is a tesseract::PageSegMode and is always passed, never left
+    // to the library: TessBaseAPI's default is PSM_SINGLE_BLOCK, which reads the
+    // whole photograph as one uniform slab of text. This engine never set one, so
+    // that is what shipped - and on a magazine page with an illustration beside
+    // the column it turned 66 words at 92% into 124 words at 38%. The
+    // command-line tool sets PSM_AUTO before every run; so does this now.
+    //
     // Runs on the worker thread, with the API mutex already held.
-    bool recogniseInto(const QImage &grey, OcrResult *out,
+    bool recogniseInto(const QImage &grey, int pageSegMode, OcrResult *out,
                        QVector<QLineF> *baselines);
+
+    // The angles, in one place, because two loops search them.
+    QVector<int> searchAngles(bool autoRotate) const;
+
+    // The best reading of `prepared` at one segmentation mode, over every angle,
+    // with boxes already mapped back into the source photo's coordinates.
+    struct Attempt
+    {
+        OcrResult result;
+        QVector<QLineF> baselines;
+        int angle = 0;
+        bool found = false;
+    };
+
+    Attempt bestOverAngles(const QImage &prepared, qreal scale, const QSize &sourceSize,
+                           bool autoRotate, int pageSegMode);
 
     // Runs on the worker thread.
     Outcome run(const QString &path, const QString &languages,
