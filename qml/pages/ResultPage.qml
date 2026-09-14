@@ -36,6 +36,14 @@ Page {
     // simply easier to read the other way up. Applied to the view only: the
     // overlays are children of the same item, so they turn with the photo and
     // stay aligned without a coordinate being recomputed.
+    //
+    // Set from the reading when one arrives, because the recogniser is the only
+    // thing in the app that knows which way up the photograph is. The Sailfish
+    // camera tags every frame it writes as needing no rotation - the sensor's
+    // landscape frame, however the phone was held - so a page photographed in
+    // portrait arrives on its side and stays there. The text came out right
+    // anyway, the picture above it did not, and that is the whole of the
+    // complaint. A quarter turn of the view costs nothing and fixes it.
     property int viewRotation: 0
 
     // Dragging across the photo marks out a region to read instead of the whole
@@ -138,6 +146,12 @@ Page {
     Connections {
         target: ocr
         onFinished: {
+            // Show it the way it was read. Assigning rather than binding, so the
+            // rotate button still wins afterwards: a binding would snap the view
+            // back on the next reading, and someone who has just turned the page
+            // by hand has said what they want.
+            page.viewRotation = ocr.orientation
+
             history.remember(page.imageUrl.toString().replace("file://", ""),
                              settings.tesseractLanguages,
                              ocr.wordCount, ocr.confidence, ocr.editedText)
@@ -238,13 +252,32 @@ Page {
                 width: parent.width - 2 * Theme.horizontalPageMargin
 
                 readonly property bool quarterTurned: page.viewRotation % 180 !== 0
-                height: quarterTurned ? canvas.width : canvas.height
+
+                // How wide the canvas is, derived from this item's *width* and the
+                // photo's proportions - never from this item's height.
+                //
+                // The height used to be canvas.width while canvas.width was
+                // frame.height, which is a binding loop: Qt says so once and then
+                // re-evaluates the layout forever, which on a device does not look
+                // like a warning, it looks like the page has stopped. It was only
+                // reachable by tapping "rotate the view", which is presumably why
+                // it survived; the view now turns itself to whatever way up the
+                // page was read, so it would have been on the ordinary path.
+                //
+                // Turned a quarter, the canvas lies on its side: its own height is
+                // what has to fit across the frame, so its width is the frame's
+                // width divided by the aspect rather than multiplied by it.
+                readonly property real canvasWidth: quarterTurned
+                        ? (canvas.aspect > 0 ? width / canvas.aspect : width)
+                        : width
+
+                height: quarterTurned ? canvasWidth : canvasWidth * canvas.aspect
 
                 Item {
                     id: canvas
 
                     anchors.centerIn: parent
-                    width: frame.quarterTurned ? frame.height : frame.width
+                    width: frame.canvasWidth
 
                     // Height from the image's own proportions, never from
                     // paintedHeight: that is what the Image drew, which depends on
@@ -515,39 +548,80 @@ Page {
             // inverts what the page is about - Mojo's toolbars were a strip of
             // glyphs at the edge for exactly this reason.
             //
-            // Still not the pulley: these are visible, and a press-and-hold names
-            // each one for anybody who does not recognise the glyph.
-            Row {
-                id: actions
+            // Still not the pulley: these are visible, and every one of them says
+            // what it is before it does it.
+            //
+            // Two taps, not one. A row of six glyphs is unreadable until you have
+            // learnt it, and the way to learn it used to be a press-and-hold -
+            // which is a gesture you have to already know about to discover what
+            // the button does. So the first tap names the verb and arms it, and
+            // the second runs it. Nothing fires from a tap that was only a
+            // question, which matters most for the two verbs that write a file.
+            Item {
+                id: actionBar
 
-                anchors.horizontalCenter: parent.horizontalCenter
-                spacing: Theme.paddingLarge
+                width: parent.width
+                height: actions.height
                 visible: ocr.wordCount > 0 || ocr.lastError !== ""
                          || page.showingStored
 
-                property var verbs: [
-                    { glyph: "\u2b1a", name: qsTr("Read only an area"), id: "area" },
-                    { glyph: "\u21bb", name: qsTr("Rotate the view"),   id: "rotate" },
-                    { glyph: "\u21e9", name: qsTr("Save as searchable PDF"), id: "pdf" },
-                    { glyph: "\u29c9", name: qsTr("Copy all text"),     id: "copy" },
-                    { glyph: "\u21ba", name: qsTr("Read again"),        id: "again" }
-                ]
+                // Which verb is waiting for its second tap, held by id and not by
+                // index: the bar grows a button when the page turns out to have a
+                // table, and another when it has a number worth hiding, so the
+                // index armed a moment ago can be a different verb now.
+                property string armedId: ""
 
-                // The table verb is separate because it is conditional: a page
-                // with no table must not offer to export one, and a greyed-out
-                // button that is usually greyed out is just clutter.
-                property var tableVerb: ({ glyph: "\u25a6",
-                                           name: qsTr("Save the table as CSV"),
-                                           id: "csv" })
+                // Disarmed after a few seconds. A button left armed is a button
+                // that fires from what its owner thinks is a first tap, and the
+                // one that exports a PDF should not be reachable that way.
+                Timer {
+                    id: disarm
 
-                // Offered only when there is something to hide, for the same
-                // reason as the table verb.
-                property var hideVerb: ({ glyph: "\u2588",
-                                          name: qsTr("Hide the private numbers"),
-                                          id: "hide" })
+                    interval: 4000
+                    onTriggered: actionBar.armedId = ""
+                }
 
-                Repeater {
-                    model: {
+                function tap(id) {
+                    if (actionBar.armedId === id) {
+                        actionBar.armedId = ""
+                        disarm.stop()
+                        page.runAction(id)
+                    } else {
+                        actionBar.armedId = id
+                        disarm.restart()
+                    }
+                }
+
+                Row {
+                    id: actions
+
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    spacing: Theme.paddingLarge
+
+                    property var verbs: [
+                        { glyph: "\u2b1a", name: qsTr("Read only an area"), id: "area" },
+                        { glyph: "\u21bb", name: qsTr("Rotate the view"),   id: "rotate" },
+                        { glyph: "\u21e9", name: qsTr("Save as searchable PDF"), id: "pdf" },
+                        { glyph: "\u29c9", name: qsTr("Copy all text"),     id: "copy" },
+                        { glyph: "\u21ba", name: qsTr("Read again"),        id: "again" }
+                    ]
+
+                    // The table verb is separate because it is conditional: a page
+                    // with no table must not offer to export one, and a greyed-out
+                    // button that is usually greyed out is just clutter.
+                    property var tableVerb: ({ glyph: "\u25a6",
+                                               name: qsTr("Save the table as CSV"),
+                                               id: "csv" })
+
+                    // Offered only when there is something to hide, for the same
+                    // reason as the table verb.
+                    property var hideVerb: ({ glyph: "\u2588",
+                                              name: qsTr("Hide the private numbers"),
+                                              id: "hide" })
+
+                    // Named once and read by both the Repeater and the tooltip,
+                    // so the two cannot disagree about which button is where.
+                    property var shown: {
                         var list = actions.verbs.slice()
                         if (ocr.tables.length > 0) {
                             list.push(actions.tableVerb)
@@ -558,29 +632,102 @@ Page {
                         return list
                     }
 
-                    delegate: MouseArea {
-                        width: Theme.itemSizeSmall
-                        height: Theme.itemSizeSmall
+                    Repeater {
+                        model: actions.shown
 
-                        onClicked: page.runAction(modelData.id)
-                        onPressAndHold: banner.show(modelData.name)
+                        delegate: MouseArea {
+                            id: verb
 
-                        Rectangle {
-                            anchors.fill: parent
-                            radius: Tokens.controlRadius
-                            color: parent.pressed ? Tokens.pressedColor
+                            width: Theme.itemSizeSmall
+                            height: Theme.itemSizeSmall
+
+                            readonly property bool armed:
+                                actionBar.armedId === modelData.id
+
+                            // Lit for the verb that is on, as well as for the verb
+                            // that is armed: "read only an area" stays on between
+                            // taps and has to look it.
+                            readonly property bool lit:
+                                armed || (modelData.id === "area" && page.marking)
+
+                            onClicked: actionBar.tap(modelData.id)
+
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: Tokens.controlRadius
+                                color: verb.pressed ? Tokens.pressedColor
+                                     : verb.armed ? Tokens.selectionColor
                                                   : Tokens.panelColor
-                            border.width: Tokens.hairline
-                            border.color: (modelData.id === "area" && page.marking)
-                                          ? Tokens.onColor : Tokens.separatorColor
+                                border.width: Tokens.hairline
+                                border.color: verb.lit ? Tokens.onColor
+                                                       : Tokens.separatorColor
 
-                            Label {
-                                anchors.centerIn: parent
-                                text: modelData.glyph
-                                font.pixelSize: Theme.fontSizeLarge
-                                color: (modelData.id === "area" && page.marking)
-                                       ? Tokens.onColor : Tokens.accentColor
+                                Label {
+                                    anchors.centerIn: parent
+                                    text: modelData.glyph
+                                    font.pixelSize: Theme.fontSizeLarge
+                                    color: verb.lit ? Tokens.onColor
+                                                    : Tokens.accentColor
+                                }
                             }
+                        }
+                    }
+                }
+
+                // The tooltip, over the button it belongs to rather than at the
+                // bottom of the screen where the Banner lives: a message that has
+                // to be traced back to one of six identical squares is not a
+                // tooltip. It sits above the bar, over the foot of the photograph,
+                // and no page here clips, so it is free to leave the row.
+                Rectangle {
+                    id: tip
+
+                    readonly property int slot: {
+                        for (var i = 0; i < actions.shown.length; ++i) {
+                            if (actions.shown[i].id === actionBar.armedId) {
+                                return i
+                            }
+                        }
+                        return -1
+                    }
+
+                    // Measured from the row's own geometry rather than by reaching
+                    // into a delegate: the buttons are one fixed size at one fixed
+                    // spacing, so where the nth one sits is arithmetic.
+                    readonly property real slotCentre:
+                        actions.x + tip.slot * (Theme.itemSizeSmall + actions.spacing)
+                        + Theme.itemSizeSmall / 2
+
+                    visible: slot >= 0
+                    width: Math.min(actionBar.width,
+                                    tipColumn.width + 2 * Theme.paddingLarge)
+                    height: tipColumn.height + 2 * Theme.paddingMedium
+                    radius: Tokens.panelRadius
+                    color: Tokens.bannerColor
+
+                    // Clamped into the page: the first and last buttons are near
+                    // the edges and a bubble centred on them would hang off.
+                    x: Math.max(0, Math.min(actionBar.width - width,
+                                            slotCentre - width / 2))
+                    y: -height - Theme.paddingSmall
+
+                    Column {
+                        id: tipColumn
+
+                        anchors.centerIn: parent
+                        spacing: Theme.paddingSmall / 2
+
+                        Label {
+                            text: tip.slot >= 0 ? actions.shown[tip.slot].name : ""
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Tokens.bannerTextColor
+                        }
+
+                        Label {
+                            text: qsTr("Tap again to do it")
+                            font.pixelSize: Theme.fontSizeExtraSmall
+                            color: Tokens.bannerTextColor
+                            opacity: Tokens.disabledOpacity
                         }
                     }
                 }

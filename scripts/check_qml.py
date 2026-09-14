@@ -222,6 +222,89 @@ def check_qtquick_version(path, lines):
     return findings
 
 
+# A size binding that names another item's opposite dimension.
+SIZE_PROP = re.compile(r"^\s*(width|height)\s*:\s*(.*)$")
+ID_DECL = re.compile(r"^\s*id:\s*(\w+)\s*$")
+CROSS_REF = re.compile(r"\b(\w+)\.(width|height)\b")
+
+
+def _size_graph(lines):
+    """Which item's size binding reads which other item's size.
+
+    Blocks are followed by counting braces, which is enough for QML written
+    the way this project writes it: one brace per line end. A binding's
+    continuation lines are taken as the more-indented lines that follow it.
+    """
+    stack = [{"id": None}]
+    edges = {}          # id -> {(other_id, other_prop): (prop, line_no, text)}
+    pending = None      # (owner_id, prop, line_no, text, indent)
+
+    for number, raw in enumerate(lines, start=1):
+        line = strip_comments(raw)
+        if not line.strip():
+            continue
+        indent = len(line) - len(line.lstrip())
+
+        if pending and indent <= pending[4] and not SIZE_PROP.match(line):
+            pending = None
+
+        match = ID_DECL.match(line)
+        if match:
+            stack[-1]["id"] = match.group(1)
+
+        match = SIZE_PROP.match(line)
+        if match and stack[-1]["id"]:
+            pending = (stack[-1]["id"], match.group(1), number,
+                       line.strip(), indent)
+
+        if pending:
+            owner, prop, number0, text, _ = pending
+            for other, other_prop in CROSS_REF.findall(line):
+                if other == owner:
+                    continue
+                edges.setdefault(owner, {})[(other, other_prop)] = (prop, number0, text)
+
+        opened = line.count("{")
+        closed = line.count("}")
+        for _ in range(opened):
+            stack.append({"id": None})
+        for _ in range(closed):
+            if len(stack) > 1:
+                stack.pop()
+            pending = None
+
+    return edges
+
+
+def check_size_cycle(path, lines):
+    """Two items sizing each other across the two dimensions.
+
+    An item whose height is a child's width, inside a child whose width is
+    that item's height, is a binding loop. Qt reports it once and then goes
+    on re-evaluating the layout, so on a device the page does not warn - it
+    stops. The one that shipped was in ResultPage: the frame reserved
+    canvas.width for a quarter-turned photo while the canvas took its width
+    from frame.height.
+
+    Break it by deriving both from something outside the pair - the width the
+    page gives the frame, and the photo's own proportions.
+    """
+    edges = _size_graph(lines)
+    findings = []
+    seen = set()
+    for owner, refs in edges.items():
+        for (other, other_prop), (prop, number, text) in refs.items():
+            back = edges.get(other, {}).get((owner, prop))
+            if back and back[0] == other_prop:
+                key = tuple(sorted([owner, other]))
+                if key in seen:
+                    continue
+                seen.add(key)
+                findings.append((number, f"{text}  (and {other}.{other_prop} "
+                                         f"reads {owner}.{prop})"))
+    return findings
+
+
 CHECKS = [
     ("model get() inside a property binding", check_get_in_binding),
     ("property shadows one Item already has", check_shadowed_item_property),
@@ -229,6 +312,7 @@ CHECKS = [
     ("recognised text rendered as rich text", check_richtext),
     ("size bound to a child's painted size", check_painted_size_binding),
     ("property needs a newer QtQuick than imported", check_qtquick_version),
+    ("two items sizing each other across dimensions", check_size_cycle),
 ]
 
 

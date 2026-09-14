@@ -311,6 +311,10 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>Tap again to do it</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Tap a word in the photo. Tap it again to take the whole line, then the paragraph.</source>
         <translation type="unfinished"></translation>
     </message>

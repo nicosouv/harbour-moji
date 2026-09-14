@@ -311,6 +311,10 @@
         <translation>Un seul bloc affiché. Touchez son cadre à nouveau pour toute la page.</translation>
     </message>
     <message>
+        <source>Tap again to do it</source>
+        <translation>Toucher à nouveau pour l'exécuter</translation>
+    </message>
+    <message>
         <source>Tap a word in the photo. Tap it again to take the whole line, then the paragraph.</source>
         <translation>Touchez un mot sur la photo. Touchez-le à nouveau pour prendre toute la ligne, puis le paragraphe.</translation>
     </message>

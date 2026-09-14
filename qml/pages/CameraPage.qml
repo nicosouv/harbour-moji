@@ -25,6 +25,34 @@ Page {
     // camera that stays locked for the next app that wants it.
     property bool active: status === PageStatus.Active
 
+    // How far the frame about to be taken has to be turned clockwise to be the
+    // right way up.
+    //
+    // The camera on this device writes an EXIF orientation of 1 on every photo it
+    // takes - the five that were measured are all 8192x6144, the sensor's own
+    // landscape frame, tagged as needing no rotation whichever way the phone was
+    // held. So nothing downstream can know: ImagePrep::loadUpright applies the tag
+    // faithfully and the tag says nothing, which is why a page photographed in
+    // portrait arrived on its side.
+    //
+    // Portrait is anchored to a measurement: a magazine page shot in portrait read
+    // correctly only after a quarter turn clockwise. The other three follow from
+    // it by quarter turns, and are not measured.
+    //
+    // Nothing depends on this being right. The recogniser searches all four
+    // angles and the result page turns the view to whichever one it read, so a tag
+    // that comes out backwards costs a wrong thumbnail in the gallery and nothing
+    // in this app. It is written because a photo that knows which way up it is, is
+    // a better photo.
+    function captureRotation() {
+        switch (page.orientation) {
+        case Orientation.Landscape:         return 0
+        case Orientation.PortraitInverted:  return 270
+        case Orientation.LandscapeInverted: return 180
+        default:                            return 90
+        }
+    }
+
     Rectangle {
         anchors.fill: parent
         color: "black"
@@ -51,13 +79,38 @@ Page {
                 errorLabel.text = qsTr("The photo could not be taken.")
             }
         }
+
+        // Written in JavaScript, at the moment of capture, rather than bound here.
+        //
+        // Bound, it would be a declarative reference to a property this device's
+        // QtMultimedia may not have, and a QML file that names a property that is
+        // not there does not lose the property - it fails to load, and the camera
+        // page comes up black with the reason in the journal. Assigned from a
+        // function, the worst case is one logged line and a photo tagged the way
+        // it is tagged today. Nothing here can be tried on a device before a tag,
+        // so the failure mode is chosen rather than discovered.
+        function applyOrientation() {
+            if (camera.metaData) {
+                camera.metaData.orientation = page.captureRotation()
+            }
+        }
     }
 
     VideoOutput {
         anchors.fill: parent
         source: camera
         fillMode: VideoOutput.PreserveAspectFit
-        orientation: page.orientation === Orientation.Portrait ? 0 : 90
+        // Portrait and Landscape are as they were, because they are the two that
+        // are known to look right on a device. The inverted pair used to fall into
+        // the Landscape case and be a half turn out; they are now their own.
+        orientation: {
+            switch (page.orientation) {
+            case Orientation.Landscape:         return 90
+            case Orientation.PortraitInverted:  return 180
+            case Orientation.LandscapeInverted: return 270
+            default:                            return 0
+            }
+        }
     }
 
     // A frame guide, not a crop: nothing is cut to it. It is there because a page
@@ -140,6 +193,7 @@ Page {
             enabled: camera.cameraState === Camera.ActiveState
             onClicked: {
                 errorLabel.text = ""
+                camera.applyOrientation()
                 camera.imageCapture.capture()
             }
         }
