@@ -650,11 +650,29 @@ Page {
                     }
                 }
 
-                Row {
+                // A Grid that wraps, not a Row.
+                //
+                // A Row centred with no width constraint does not clip, it
+                // overflows both edges, and the buttons at the ends go off the
+                // screen where nothing can reach them. That shipped: on a 1032px
+                // screen at pixelRatio 1.5 a button is 150 and the gap 36, so five
+                // verbs fit in 894 and six need 1080. Adding "share" in v0.1.18
+                // crossed the line; a PDF page carrying an account number wants
+                // eight, which is 1452 and loses one at each end entirely.
+                //
+                // Columns are counted from the width actually available rather
+                // than fixed, so a wider screen uses one row and a narrower one
+                // uses three without either being told about the other.
+                Grid {
                     id: actions
 
                     anchors.horizontalCenter: parent.horizontalCenter
                     spacing: Theme.paddingLarge
+
+                    readonly property real cellSize: Theme.itemSizeSmall
+                    columns: Math.max(1, Math.min(
+                        shown.length,
+                        Math.floor((actionBar.width + spacing) / (cellSize + spacing))))
 
                     property var verbs: [
                         { glyph: "\u2b1a", name: qsTr("Read only an area"), id: "area" },
@@ -750,12 +768,23 @@ Page {
                         return -1
                     }
 
-                    // Measured from the row's own geometry rather than by reaching
-                    // into a delegate: the buttons are one fixed size at one fixed
-                    // spacing, so where the nth one sits is arithmetic.
+                    // Measured from the grid's own geometry rather than by
+                    // reaching into a delegate: the buttons are one fixed size at
+                    // one fixed spacing, so where the nth one sits is arithmetic -
+                    // now in two dimensions, because the grid wraps.
+                    readonly property int slotColumn:
+                        actions.columns > 0 ? tip.slot % actions.columns : 0
+                    readonly property int slotRow:
+                        actions.columns > 0 ? Math.floor(tip.slot / actions.columns) : 0
+
                     readonly property real slotCentre:
-                        actions.x + tip.slot * (Theme.itemSizeSmall + actions.spacing)
-                        + Theme.itemSizeSmall / 2
+                        actions.x + tip.slotColumn * (actions.cellSize + actions.spacing)
+                        + actions.cellSize / 2
+
+                    // The top of the row the armed button is on, so a tooltip for
+                    // a button on the second row does not float above the first.
+                    readonly property real slotTop:
+                        tip.slotRow * (actions.cellSize + actions.spacing)
 
                     visible: slot >= 0
                     width: Math.min(actionBar.width,
@@ -768,7 +797,7 @@ Page {
                     // the edges and a bubble centred on them would hang off.
                     x: Math.max(0, Math.min(actionBar.width - width,
                                             slotCentre - width / 2))
-                    y: -height - Theme.paddingSmall
+                    y: slotTop - height - Theme.paddingSmall
 
                     Column {
                         id: tipColumn
