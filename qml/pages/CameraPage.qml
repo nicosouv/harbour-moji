@@ -44,6 +44,11 @@ Page {
     // that comes out backwards costs a wrong thumbnail in the gallery and nothing
     // in this app. It is written because a photo that knows which way up it is, is
     // a better photo.
+    // Whether the lamp is lit. Not remembered between visits: walking into a dark
+    // street is the case for it, and a torch that comes on by itself in a lit room
+    // the next morning is worse than one more tap.
+    property bool torchOn: false
+
     function captureRotation() {
         switch (page.orientation) {
         case Orientation.Landscape:         return 0
@@ -71,6 +76,19 @@ Page {
         focus {
             focusMode: Camera.FocusContinuous
             focusPointMode: Camera.FocusPointAuto
+        }
+
+        // The torch, not the flash.
+        //
+        // Torch mode is on while composing, so what you see is what gets read -
+        // a flash fires after the decision has been made and you find out
+        // afterwards whether it helped. It matters more here than any algorithm:
+        // every photograph that this app read badly was taken at night, and
+        // measured against them, a four-times-larger recognition model bought one
+        // improvement out of five. Light changes the input instead of arguing
+        // with it.
+        flash {
+            mode: page.torchOn ? Camera.FlashTorch : Camera.FlashOff
         }
 
         imageCapture {
@@ -147,6 +165,45 @@ Page {
                     color: Tokens.onColor
                     x: parent.atRight ? parent.width - width : 0
                 }
+            }
+        }
+    }
+
+    // Left of the shutter, the same size as the frame-guide corners, so it reads
+    // as part of the furniture rather than as something floating on the picture.
+    MouseArea {
+        id: torchButton
+
+        anchors {
+            right: shutter.left
+            rightMargin: Theme.paddingLarge * 2
+            verticalCenter: shutter.verticalCenter
+        }
+
+        width: Theme.itemSizeSmall
+        height: width
+
+        onClicked: page.torchOn = !page.torchOn
+
+        Rectangle {
+            anchors.fill: parent
+            radius: width / 2
+            color: page.torchOn ? "#FFFFFF" : "#40FFFFFF"
+            border.width: Tokens.hairline
+            border.color: "#FFFFFF"
+
+            Behavior on color {
+                ColorAnimation {
+                    duration: Tokens.durFast
+                    easing.type: Tokens.easingType
+                }
+            }
+
+            Label {
+                anchors.centerIn: parent
+                text: "\u2600"
+                font.pixelSize: Theme.fontSizeLarge
+                color: page.torchOn ? "#000000" : "#FFFFFF"
             }
         }
     }

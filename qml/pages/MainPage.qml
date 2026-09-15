@@ -45,7 +45,7 @@ Page {
         }
 
         if (pages === 1) {
-            page.readPdfPage(url, 1, true)
+            page.readPdfPage(url, 1, pages, true)
             return
         }
 
@@ -55,11 +55,11 @@ Page {
         var chooser = pageStack.replace(Qt.resolvedUrl("PdfPagePage.qml"),
                                         { documentUrl: url, pageCount: pages })
         chooser.chosen.connect(function (number) {
-            page.readPdfPage(url, number, true)
+            page.readPdfPage(url, number, pages, true)
         })
     }
 
-    function readPdfPage(url, number, replace) {
+    function readPdfPage(url, number, pages, replace) {
         var rendered = pdf.renderPage(url, number)
         if (rendered == "") {
             banner.show(pdf.lastError())
@@ -75,11 +75,18 @@ Page {
             banner.show(qsTr("This page already carries text. Reading it as a picture anyway."))
         }
 
+        // The document travels with the page, so the result page can offer the
+        // next one without coming back through the picker.
+        var properties = { imageUrl: rendered,
+                           documentUrl: url,
+                           documentPage: number,
+                           documentPages: pages }
+
         pageStack.completeAnimation()
         if (replace) {
-            pageStack.replace(Qt.resolvedUrl("ResultPage.qml"), { imageUrl: rendered })
+            pageStack.replace(Qt.resolvedUrl("ResultPage.qml"), properties)
         } else {
-            pageStack.push(Qt.resolvedUrl("ResultPage.qml"), { imageUrl: rendered })
+            pageStack.push(Qt.resolvedUrl("ResultPage.qml"), properties)
         }
     }
 

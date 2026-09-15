@@ -231,10 +231,6 @@
         <translation>Impossible d'enregistrer la copie</translation>
     </message>
     <message>
-        <source>Could not save the table</source>
-        <translation>Impossible d'enregistrer le tableau</translation>
-    </message>
-    <message>
         <source>Drag a box around the part you want</source>
         <translation>Tracez un cadre autour de la partie voulue</translation>
     </message>
@@ -295,14 +291,6 @@
         <translation>Pivoter l'affichage</translation>
     </message>
     <message>
-        <source>Save as searchable PDF</source>
-        <translation>Enregistrer en PDF cherchable</translation>
-    </message>
-    <message>
-        <source>Save the table as CSV</source>
-        <translation>Enregistrer le tableau en CSV</translation>
-    </message>
-    <message>
         <source>Saved to Downloads as %1</source>
         <translation>Enregistré dans Téléchargements sous %1</translation>
     </message>
@@ -349,6 +337,30 @@
     <message>
         <source>Words marked in red were hard to read. Tap one to retype it.</source>
         <translation>Les mots en rouge ont été difficiles à lire. Touchez-en un pour le retaper.</translation>
+    </message>
+    <message>
+        <source>Save as PDF</source>
+        <translation>Enregistrer en PDF</translation>
+    </message>
+    <message>
+        <source>Share the text</source>
+        <translation>Partager le texte</translation>
+    </message>
+    <message>
+        <source>Sharing is not available on this device</source>
+        <translation>Le partage n'est pas disponible sur cet appareil</translation>
+    </message>
+    <message>
+        <source>There is no text to share</source>
+        <translation>Il n'y a pas de texte à partager</translation>
+    </message>
+    <message>
+        <source>Read the next page</source>
+        <translation>Lire la page suivante</translation>
+    </message>
+    <message>
+        <source>Page %1 of %2 — %3 words</source>
+        <translation>Page %1 sur %2 — %3 mots</translation>
     </message>
 </context>
 <context>

@@ -231,10 +231,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Could not save the table</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Drag a box around the part you want</source>
         <translation type="unfinished"></translation>
     </message>
@@ -295,14 +291,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Save as searchable PDF</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Save the table as CSV</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Saved to Downloads as %1</source>
         <translation type="unfinished"></translation>
     </message>
@@ -348,6 +336,30 @@
     </message>
     <message>
         <source>Words marked in red were hard to read. Tap one to retype it.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Save as PDF</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Share the text</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Sharing is not available on this device</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>There is no text to share</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Read the next page</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Page %1 of %2 — %3 words</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
