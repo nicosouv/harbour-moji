@@ -12,10 +12,6 @@
         <translation>Imposé par le bac à sable, pas seulement promis</translation>
     </message>
     <message>
-        <source>MIT licensed. Text recognition by Tesseract, Apache-2.0.</source>
-        <translation>Sous licence MIT. Reconnaissance de texte par Tesseract, Apache-2.0.</translation>
-    </message>
-    <message>
         <source>Moji (文字) is Japanese for a written character.</source>
         <translation>Moji (文字) signifie « caractère écrit » en japonais.</translation>
     </message>
@@ -42,6 +38,14 @@
     <message>
         <source>Version</source>
         <translation>Version</translation>
+    </message>
+    <message>
+        <source>MIT licensed. Text recognition by Tesseract, Apache-2.0. PDF rendering by Poppler, GPL-2.0-or-later, which makes this binary GPL.</source>
+        <translation>Sous licence MIT. Reconnaissance de texte par Tesseract, Apache-2.0. Rendu PDF par Poppler, GPL-2.0-or-later, ce qui rend ce binaire GPL.</translation>
+    </message>
+    <message>
+        <source>Developed with ❤️ for Sailfish OS</source>
+        <translation>Développé avec ❤️ pour Sailfish OS</translation>
     </message>
 </context>
 <context>
@@ -79,10 +83,6 @@
     <message>
         <source>%1 words — photo no longer on the device</source>
         <translation>%1 mots — photo absente de l'appareil</translation>
-    </message>
-    <message>
-        <source>About</source>
-        <translation>À propos</translation>
     </message>
     <message>
         <source>Choose a photo</source>
@@ -354,10 +354,6 @@
 <context>
     <name>SettingsPage</name>
     <message>
-        <source>About</source>
-        <translation>À propos</translation>
-    </message>
-    <message>
         <source>About Moji OCR</source>
         <translation>À propos de Moji OCR</translation>
     </message>
@@ -416,6 +412,10 @@
     <message>
         <source>Theme</source>
         <translation>Thème</translation>
+    </message>
+    <message>
+        <source>About</source>
+        <translation>À propos</translation>
     </message>
 </context>
 <context>

@@ -95,11 +95,11 @@ Page {
 
         VerticalScrollDecorator { }
 
+        // Settings alone. About used to be here beside it and is now a row in
+        // Settings, where it already had one - two ways to the same page, one of
+        // them behind a gesture, is a worse menu than one way in the obvious
+        // place.
         PullDownMenu {
-            MenuItem {
-                text: qsTr("About")
-                onClicked: pageStack.push(Qt.resolvedUrl("AboutPage.qml"))
-            }
             MenuItem {
                 text: qsTr("Settings")
                 onClicked: pageStack.push(Qt.resolvedUrl("SettingsPage.qml"))

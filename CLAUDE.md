@@ -48,7 +48,9 @@ slogan — as a build rule:
   for. UI is built from `qml/Mochi/` — read `qml/Mochi/README.md` before adding a
   control, and do not mix Mochi controls with Silica's on one page.
 - **A page's own actions are rows, not pulley entries.** The pulley carries what is
-  global — settings, about. Mojo put the create action in the list as its last row
+  global — settings, and that is now all it carries: About was beside it and moved
+  into Settings, which already had a row for it. Two ways to one page, one of them
+  behind a gesture, is a worse menu than one way in the obvious place. Mojo put the create action in the list as its last row
   rather than behind a button, and that is the gesture Mochi is for. Putting a
   page's verbs in the pulley is the Silica habit being replaced, and it is the easy
   mistake because a pulley is the quickest place to put something.

@@ -92,7 +92,17 @@ Page {
                 wrapMode: Text.Wrap
                 font.pixelSize: Theme.fontSizeExtraSmall
                 color: Tokens.secondaryColor
-                text: qsTr("MIT licensed. Text recognition by Tesseract, Apache-2.0.")
+                text: qsTr("MIT licensed. Text recognition by Tesseract, Apache-2.0. PDF rendering by Poppler, GPL-2.0-or-later, which makes this binary GPL.")
+            }
+
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.Wrap
+                font.pixelSize: Theme.fontSizeSmall
+                color: Tokens.accentColor
+                text: qsTr("Developed with ❤️ for Sailfish OS")
             }
         }
     }

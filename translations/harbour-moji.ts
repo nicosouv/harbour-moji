@@ -12,10 +12,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>MIT licensed. Text recognition by Tesseract, Apache-2.0.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Moji (文字) is Japanese for a written character.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -41,6 +37,14 @@
     </message>
     <message>
         <source>Version</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>MIT licensed. Text recognition by Tesseract, Apache-2.0. PDF rendering by Poppler, GPL-2.0-or-later, which makes this binary GPL.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Developed with ❤️ for Sailfish OS</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -78,10 +82,6 @@
     </message>
     <message>
         <source>%1 words — photo no longer on the device</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>About</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -354,10 +354,6 @@
 <context>
     <name>SettingsPage</name>
     <message>
-        <source>About</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>About Moji OCR</source>
         <translation type="unfinished"></translation>
     </message>
@@ -415,6 +411,10 @@
     </message>
     <message>
         <source>Theme</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>About</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
