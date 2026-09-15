@@ -197,6 +197,32 @@ Page {
             }
         }
 
+        // Tapping anywhere that is not the text closes the keyboard.
+        //
+        // Declared before the Column, so it sits underneath every other item in
+        // the flickable: a tap on the photo, on one of the action buttons or on a
+        // row is taken by that item and never arrives here. Only a tap that hit
+        // nothing at all falls through.
+        //
+        // Enabled only while the field actually has focus, so it is inert the rest
+        // of the time and cannot swallow anything. Without it the keyboard stays
+        // up over the middle of the page with no obvious way to put it away -
+        // Silica has no "done" affordance for a TextEdit, because a text field on
+        // this platform is normally the whole point of the page, and here it is
+        // one panel among several.
+        MouseArea {
+            anchors.fill: column
+            enabled: rawText.activeFocus
+
+            onClicked: {
+                // Clearing focus is what actually dismisses it; hiding the panel
+                // as well is belt and braces for the case where the focus scope
+                // holds on, which cannot be tried from here.
+                rawText.focus = false
+                Qt.inputMethod.hide()
+            }
+        }
+
         Column {
             id: column
 
