@@ -51,12 +51,54 @@ Page {
                 Repeater {
                     model: page.pageCount
 
-                    delegate: PanelRow {
+                    delegate: MouseArea {
                         width: parent.width
-                        // index is zero-based and a reader is not.
-                        title: qsTr("Page %1").arg(index + 1)
-                        glyph: "▤"
+                        height: Theme.itemSizeLarge
+
                         onClicked: page.chosen(index + 1)
+
+                        Rectangle {
+                            anchors.fill: parent
+                            color: parent.pressed ? Tokens.pressedColor : "transparent"
+                        }
+
+                        // Rendered small, and only when the row is about to be
+                        // seen. A forty-page document would otherwise render forty
+                        // pages before showing anything.
+                        Image {
+                            id: thumb
+
+                            anchors {
+                                left: parent.left
+                                leftMargin: Theme.paddingLarge
+                                verticalCenter: parent.verticalCenter
+                            }
+                            height: parent.height - Theme.paddingMedium * 2
+                            width: height * 0.75
+                            fillMode: Image.PreserveAspectFit
+                            asynchronous: true
+                            source: pdf.thumbnail(page.documentUrl, index + 1,
+                                                  Theme.itemSizeLarge)
+
+                            Rectangle {
+                                anchors.fill: parent
+                                color: "transparent"
+                                border.width: Tokens.hairline
+                                border.color: Tokens.separatorColor
+                            }
+                        }
+
+                        Label {
+                            anchors {
+                                left: thumb.right
+                                leftMargin: Theme.paddingLarge
+                                verticalCenter: parent.verticalCenter
+                            }
+                            // index is zero-based and a reader is not.
+                            text: qsTr("Page %1").arg(index + 1)
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Tokens.primaryColor
+                        }
                     }
                 }
             }

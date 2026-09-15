@@ -171,6 +171,18 @@
         <source>The language data could not be loaded.</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Those corners do not make a page.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The page could not be straightened.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The straightened page could not be saved.</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ResultPage</name>
@@ -362,6 +374,10 @@
         <source>Recognised text</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Straighten the page</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>SettingsPage</name>
@@ -427,6 +443,14 @@
     </message>
     <message>
         <source>About</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>What helps, and what cannot be recovered</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Taking a readable photo</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -521,6 +545,100 @@
     <name>harbour-moji</name>
     <message>
         <source>Recognised text</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>CropPage</name>
+    <message>
+        <source>Straighten</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Drag the four marks onto the corners of the page.</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>HintsPage</name>
+    <message>
+        <source>A highlight erases the words under it, and nothing can recover them</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>A page at an angle converges, and no rotation fixes that — use “Straighten the page” if you cannot</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Avoid</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Do</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Every photo this app read badly was taken at night. The torch in the camera is there for that</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Fill the frame with the page</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Give it light</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Hold the phone parallel to the page</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>How the photo is taken matters more than any setting on the previous page. These are the things that were measured to make the biggest difference.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Indoors the exposure is long. Blur cannot be sharpened back — that was measured too</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Moving while the shutter is open</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Printed pages read well. Street signs, handwriting and text over photographs read poorly, and that is a limit of recognition that runs on a phone rather than something to adjust.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Reading French as English costs every accented word — it is on the result page as well as in Settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Reflections on glossy paper</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Set the right language first</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Standing over a page puts a gradient across it; step aside or raise the light</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Taking a readable photo</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Text too small in the frame is the commonest reason a page reads badly</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Your own shadow</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

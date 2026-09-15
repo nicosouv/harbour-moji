@@ -71,6 +71,29 @@ Current release: **v0.1.14**. Ten test suites, all green.
   ambience), Mochi light and Mochi dark. In ambience mode the controls are real
   Silica ones, not lookalikes.
 
+## 0.2.0
+
+- **A page photographed at an angle can be pulled flat.** The one distortion
+  nothing else here touched: the deskew straightens text rotated *in the plane of
+  the photograph*, and a page held at an angle to the camera converges instead —
+  the far edge shorter than the near one — which no rotation fixes. Four marks on
+  the corners and `QTransform::quadToQuad`, which is plain Qt, so it lives in the
+  layer `tests/` can reach. The idea is Textractor's
+  (github.com/smatkovi/Textractor, MIT), which solves it the same way.
+- **A page on how to take a photograph this can read.** The largest lever there
+  is, and it belongs to the user rather than the developer: measured on real
+  photographs, framing and light moved the result far more than any setting.
+- **PDF pages are chosen by sight**, not by number.
+- **The action bar wraps.** It did not, and at six verbs it overflowed a 1032px
+  screen by 48 pixels — so the outermost buttons were off the edge where nothing
+  could reach them. Adding *share* in v0.1.18 crossed the line; a PDF page with an
+  account number on it wanted eight verbs and 1452 pixels.
+- **Unsharp masking was tried and rejected.** Textractor sharpens before
+  thresholding and the reasoning is good — a hand-held photo is soft, a recogniser
+  works on edges. Measured here it won once in five and lost badly on the night
+  photographs, for the same reason thresholding does: it amplifies noise, the word
+  count climbs, the confidence collapses. The numbers are in CLAUDE.md.
+
 ## Landed, not yet seen on a phone
 
 Written, measured off-device against five photographs taken on the phone, and

@@ -1,5 +1,9 @@
 #include "ocrengine.h"
 
+#include <QCryptographicHash>
+#include <QDir>
+#include <QStandardPaths>
+#include <QPolygonF>
 #include <QFile>
 #include <QPainter>
 #include <QFileInfo>
@@ -640,6 +644,56 @@ bool OcrEngine::exportPdf(const QUrl &imageUrl, const QString &path) const
     // invisible-layer version wrote the words straight out of the result and so
     // carried the uncorrected spelling into the file for ever.
     return PdfExport::write(path, photo, editedText());
+}
+
+QUrl OcrEngine::flattenPage(const QUrl &imageUrl, const QVariantList &corners)
+{
+    setLastError(QString());
+
+    const QString source = imageUrl.isLocalFile() ? imageUrl.toLocalFile()
+                                                  : imageUrl.toString();
+
+    const QImage photo = ImagePrep::loadUpright(source);
+    if (photo.isNull()) {
+        setLastError(tr("That image is not there any more."));
+        return QUrl();
+    }
+
+    QPolygonF quad;
+    for (const QVariant &corner : corners) {
+        quad << corner.toPointF();
+    }
+
+    if (!ImagePrep::isUsableQuad(quad, photo.size())) {
+        setLastError(tr("Those corners do not make a page."));
+        return QUrl();
+    }
+
+    const QImage flat = ImagePrep::flattened(photo, quad);
+    if (flat.isNull()) {
+        setLastError(tr("The page could not be straightened."));
+        return QUrl();
+    }
+
+    // Beside the rendered PDF pages, and named from the source the same way, so
+    // the one prune covers both and straightening a photo twice does not leave
+    // two copies.
+    const QString cache =
+        QStandardPaths::writableLocation(QStandardPaths::CacheLocation)
+        + QStringLiteral("/pages");
+    QDir().mkpath(cache);
+
+    const QString key = QString::fromLatin1(
+        QCryptographicHash::hash(source.toUtf8(), QCryptographicHash::Sha1).toHex());
+    const QString target = QStringLiteral("%1/%2-flat.jpg").arg(cache, key);
+
+    if (!flat.save(target, "JPEG", 92)) {
+        setLastError(tr("The straightened page could not be saved."));
+        return QUrl();
+    }
+
+    qCDebug(lcMoji) << "flattened to" << flat.size();
+    return QUrl::fromLocalFile(target);
 }
 
 namespace {

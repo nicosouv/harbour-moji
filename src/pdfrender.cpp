@@ -95,24 +95,41 @@ QString PdfRender::cacheDirectory() const
            + QStringLiteral("/pages");
 }
 
-void PdfRender::pruneCache()
+QString PdfRender::thumbnailDirectory() const
 {
-    QDir dir(cacheDirectory());
+    return QStandardPaths::writableLocation(QStandardPaths::CacheLocation)
+           + QStringLiteral("/thumbs");
+}
+
+void PdfRender::pruneDirectory(const QString &path, int keep)
+{
+    QDir dir(path);
     if (!dir.exists()) {
         return;
     }
 
-    // Oldest first, so the newest MaxCachedPages survive.
+    // Oldest first, so the newest `keep` survive.
     const QFileInfoList files =
         dir.entryInfoList(QStringList { QStringLiteral("*.jpg") },
                           QDir::Files, QDir::Time | QDir::Reversed);
 
-    const int excess = files.size() - MaxCachedPages;
+    const int excess = files.size() - keep;
     for (int i = 0; i < excess; ++i) {
         if (!QFile::remove(files.at(i).absoluteFilePath())) {
             qCWarning(lcMoji) << "could not drop a cached page";
         }
     }
+}
+
+void PdfRender::pruneCache()
+{
+    pruneDirectory(cacheDirectory(), MaxCachedPages);
+    pruneDirectory(thumbnailDirectory(), MaxCachedThumbnails);
+
+    // Anything left where v0.1.16 and v0.1.17 put rendered pages, before there
+    // were subdirectories. Nothing writes there now, so nothing would ever have
+    // removed them.
+    pruneDirectory(QStandardPaths::writableLocation(QStandardPaths::CacheLocation), 0);
 }
 
 bool PdfRender::isPdf(const QUrl &fileUrl) const
@@ -144,6 +161,48 @@ QString PdfRender::embeddedText(const QUrl &fileUrl, int pageNumber)
     }
 
     return page->text(QRectF()).trimmed();
+}
+
+QUrl PdfRender::thumbnail(const QUrl &fileUrl, int pageNumber, int edge)
+{
+    m_lastError.clear();
+
+    const QString path = localPath(fileUrl);
+    const std::unique_ptr<Poppler::Document> document = open(path, &m_lastError);
+    if (!document) {
+        return QUrl();
+    }
+
+    const std::unique_ptr<Poppler::Page> page = adopt(document->page(pageNumber - 1));
+    if (!page) {
+        m_lastError = tr("That page is not in the document.");
+        return QUrl();
+    }
+
+    // The same arithmetic the full render uses, against a much smaller budget -
+    // so a thumbnail of an A4 page is about 20 dpi, which is unreadable and is
+    // exactly right: it is there to be recognised as a shape, not read.
+    const qreal dpi = PdfPage::resolutionFor(page->pageSizeF(), edge);
+    const QImage rendered = page->renderToImage(dpi, dpi);
+    if (rendered.isNull()) {
+        m_lastError = tr("That page could not be rendered.");
+        return QUrl();
+    }
+
+    const QString cache = thumbnailDirectory();
+    QDir().mkpath(cache);
+
+    const QString key = QString::fromLatin1(
+        QCryptographicHash::hash(path.toUtf8(), QCryptographicHash::Sha1).toHex());
+    const QString target = QStringLiteral("%1/%2-t%3.jpg").arg(cache, key)
+                               .arg(pageNumber);
+
+    if (!rendered.save(target, "JPEG", 80)) {
+        m_lastError = tr("The rendered page could not be saved.");
+        return QUrl();
+    }
+
+    return QUrl::fromLocalFile(target);
 }
 
 QUrl PdfRender::renderPage(const QUrl &fileUrl, int pageNumber)

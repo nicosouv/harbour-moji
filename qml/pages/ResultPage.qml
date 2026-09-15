@@ -105,6 +105,8 @@ Page {
             if (page.marking) {
                 banner.show(qsTr("Drag a box around the part you want"))
             }
+        } else if (id === "flatten") {
+            page.straighten()
         } else if (id === "rotate") {
             page.viewRotation = (page.viewRotation + 90) % 360
         } else if (id === "pdf") {
@@ -140,6 +142,27 @@ Page {
                 banner.show(qsTr("Could not save the copy"))
             }
         }
+    }
+
+    // Mark the corners of the page, then read the flattened copy.
+    //
+    // The straightened image replaces this page rather than stacking on top of
+    // it, and it keeps no link back to the original - the photo is still on the
+    // device, and a second straightening of an already-straightened copy is not
+    // something anybody wants to arrive at by pressing back twice.
+    function straighten() {
+        var dialog = pageStack.push(Qt.resolvedUrl("CropPage.qml"),
+                                    { imageUrl: page.imageUrl,
+                                      imageSize: ocr.imageSize })
+        dialog.accepted.connect(function () {
+            var flat = ocr.flattenPage(page.imageUrl, dialog.corners)
+            if (flat == "") {
+                banner.show(ocr.lastError)
+                return
+            }
+            pageStack.completeAnimation()
+            pageStack.replace(Qt.resolvedUrl("ResultPage.qml"), { imageUrl: flat })
+        })
     }
 
     // The next page of the same document, in place of this one.
@@ -676,6 +699,7 @@ Page {
 
                     property var verbs: [
                         { glyph: "\u2b1a", name: qsTr("Read only an area"), id: "area" },
+                        { glyph: "\u25f1", name: qsTr("Straighten the page"), id: "flatten" },
                         { glyph: "\u21bb", name: qsTr("Rotate the view"),   id: "rotate" },
                         { glyph: "\u21e9", name: qsTr("Save as PDF"),       id: "pdf" },
                         { glyph: "\u29c9", name: qsTr("Copy all text"),     id: "copy" },

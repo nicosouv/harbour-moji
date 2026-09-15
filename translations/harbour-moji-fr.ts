@@ -171,6 +171,18 @@
         <source>The language data could not be loaded.</source>
         <translation>Les données de langue n'ont pas pu être chargées.</translation>
     </message>
+    <message>
+        <source>Those corners do not make a page.</source>
+        <translation>Ces coins ne forment pas une page.</translation>
+    </message>
+    <message>
+        <source>The page could not be straightened.</source>
+        <translation>La page n'a pas pu être redressée.</translation>
+    </message>
+    <message>
+        <source>The straightened page could not be saved.</source>
+        <translation>La page redressée n'a pas pu être enregistrée.</translation>
+    </message>
 </context>
 <context>
     <name>ResultPage</name>
@@ -362,6 +374,10 @@
         <source>Recognised text</source>
         <translation>Texte reconnu</translation>
     </message>
+    <message>
+        <source>Straighten the page</source>
+        <translation>Redresser la page</translation>
+    </message>
 </context>
 <context>
     <name>SettingsPage</name>
@@ -428,6 +444,14 @@
     <message>
         <source>About</source>
         <translation>À propos</translation>
+    </message>
+    <message>
+        <source>What helps, and what cannot be recovered</source>
+        <translation>Ce qui aide, et ce qui ne se rattrape pas</translation>
+    </message>
+    <message>
+        <source>Taking a readable photo</source>
+        <translation>Prendre une photo lisible</translation>
     </message>
 </context>
 <context>
@@ -522,6 +546,100 @@
     <message>
         <source>Recognised text</source>
         <translation>Texte reconnu</translation>
+    </message>
+</context>
+<context>
+    <name>CropPage</name>
+    <message>
+        <source>Straighten</source>
+        <translation>Redresser</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Annuler</translation>
+    </message>
+    <message>
+        <source>Drag the four marks onto the corners of the page.</source>
+        <translation>Faites glisser les quatre repères sur les coins de la page.</translation>
+    </message>
+</context>
+<context>
+    <name>HintsPage</name>
+    <message>
+        <source>A highlight erases the words under it, and nothing can recover them</source>
+        <translation>Un reflet efface les mots qu'il couvre, et rien ne les récupère</translation>
+    </message>
+    <message>
+        <source>A page at an angle converges, and no rotation fixes that — use “Straighten the page” if you cannot</source>
+        <translation>Une page de biais fuit, et aucune rotation n'y remédie — utilisez « Redresser la page » si vous ne pouvez pas</translation>
+    </message>
+    <message>
+        <source>Avoid</source>
+        <translation>À éviter</translation>
+    </message>
+    <message>
+        <source>Do</source>
+        <translation>À faire</translation>
+    </message>
+    <message>
+        <source>Every photo this app read badly was taken at night. The torch in the camera is there for that</source>
+        <translation>Toutes les photos mal lues par l'app avaient été prises de nuit. La lampe de l'appareil est là pour ça</translation>
+    </message>
+    <message>
+        <source>Fill the frame with the page</source>
+        <translation>Remplir le cadre avec la page</translation>
+    </message>
+    <message>
+        <source>Give it light</source>
+        <translation>Donner de la lumière</translation>
+    </message>
+    <message>
+        <source>Hold the phone parallel to the page</source>
+        <translation>Tenir le téléphone parallèle à la page</translation>
+    </message>
+    <message>
+        <source>How the photo is taken matters more than any setting on the previous page. These are the things that were measured to make the biggest difference.</source>
+        <translation>La façon de prendre la photo compte plus que n'importe quel réglage de la page précédente. Voici ce qui, mesures à l'appui, fait la plus grande différence.</translation>
+    </message>
+    <message>
+        <source>Indoors the exposure is long. Blur cannot be sharpened back — that was measured too</source>
+        <translation>En intérieur la pose est longue. Le flou ne se rattrape pas — cela aussi a été mesuré</translation>
+    </message>
+    <message>
+        <source>Moving while the shutter is open</source>
+        <translation>Bouger pendant la pose</translation>
+    </message>
+    <message>
+        <source>Printed pages read well. Street signs, handwriting and text over photographs read poorly, and that is a limit of recognition that runs on a phone rather than something to adjust.</source>
+        <translation>Les pages imprimées se lisent bien. Les panneaux, l'écriture manuscrite et le texte sur photo se lisent mal : c'est une limite de la reconnaissance embarquée, pas un réglage.</translation>
+    </message>
+    <message>
+        <source>Reading French as English costs every accented word — it is on the result page as well as in Settings</source>
+        <translation>Lire du français comme de l'anglais coûte chaque mot accentué — le réglage est sur la page de résultat comme dans les Réglages</translation>
+    </message>
+    <message>
+        <source>Reflections on glossy paper</source>
+        <translation>Les reflets sur le papier glacé</translation>
+    </message>
+    <message>
+        <source>Set the right language first</source>
+        <translation>Choisir la bonne langue d'abord</translation>
+    </message>
+    <message>
+        <source>Standing over a page puts a gradient across it; step aside or raise the light</source>
+        <translation>Se pencher au-dessus d'une page y projette un dégradé ; décalez-vous ou levez la lumière</translation>
+    </message>
+    <message>
+        <source>Taking a readable photo</source>
+        <translation>Prendre une photo lisible</translation>
+    </message>
+    <message>
+        <source>Text too small in the frame is the commonest reason a page reads badly</source>
+        <translation>Un texte trop petit dans le cadre est la cause la plus fréquente d'une mauvaise lecture</translation>
+    </message>
+    <message>
+        <source>Your own shadow</source>
+        <translation>Votre propre ombre</translation>
     </message>
 </context>
 </TS>

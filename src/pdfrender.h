@@ -44,6 +44,16 @@ public:
     // An empty URL means it could not be rendered; lastError says why.
     Q_INVOKABLE QUrl renderPage(const QUrl &fileUrl, int pageNumber);
 
+    // A small rendering of one page, for choosing between them by sight.
+    //
+    // Separate from renderPage rather than a parameter on it, because the two
+    // want opposite things: a page to be read is rendered at the resolution
+    // Tesseract wants and costs a couple of hundred milliseconds, while a
+    // thumbnail wants to be cheap and there may be forty of them on screen.
+    //
+    // `edge` is the longest side in pixels.
+    Q_INVOKABLE QUrl thumbnail(const QUrl &fileUrl, int pageNumber, int edge);
+
     // Whether the page carries text already.
     //
     // Worth asking, because a PDF that was exported rather than scanned has the
@@ -67,8 +77,16 @@ public:
     // few enough that a forgotten cache is small.
     static const int MaxCachedPages = 8;
 
+    // Thumbnails are kept apart from full pages and counted separately, because
+    // they are a different size of thing in both senses: a forty-page document
+    // makes forty of them at once, which would evict every full page under a
+    // shared cap, and each is a few kilobytes rather than a few hundred.
+    static const int MaxCachedThumbnails = 96;
+
 private:
     QString cacheDirectory() const;
+    QString thumbnailDirectory() const;
+    void pruneDirectory(const QString &path, int keep);
 
     QString m_lastError;
 };

@@ -235,6 +235,14 @@ Page {
 
                 PanelRow {
                     width: parent.width
+                    title: qsTr("Taking a readable photo")
+                    detail: qsTr("What helps, and what cannot be recovered")
+                    glyph: "!"
+                    onClicked: pageStack.push(Qt.resolvedUrl("HintsPage.qml"))
+                }
+
+                PanelRow {
+                    width: parent.width
                     title: qsTr("About Moji OCR")
                     glyph: "?"
                     onClicked: pageStack.push(Qt.resolvedUrl("AboutPage.qml"))

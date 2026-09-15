@@ -125,6 +125,21 @@ public:
     // it: it looks exactly like the photograph and is fully searchable.
     Q_INVOKABLE bool exportPdf(const QUrl &imageUrl, const QString &path) const;
 
+    // The photo with the four given corners pulled flat, written to the cache,
+    // returned as a file:// URL. Empty when it could not be done; lastError says
+    // why.
+    //
+    // `corners` is four QPointF in the photo's own coordinates, clockwise from the
+    // top left, as QML hands them over.
+    //
+    // A new image rather than a transform carried alongside the old one, which is
+    // the same choice PdfRender makes for a rendered page: everything downstream -
+    // the overlay, the selection, the export, the history - works on an image
+    // file, and none of it has to learn that this one arrived by a different
+    // route. The alternative is mapping every box back through a projective
+    // transform for ever after, to no benefit.
+    Q_INVOKABLE QUrl flattenPage(const QUrl &imageUrl, const QVariantList &corners);
+
     // How many sensitive numbers are on the page - IBANs, card numbers, passport
     // codes. Only the kinds that identify money or a person: an email address is
     // found too, and blacking it out by default would be deciding for the user
