@@ -656,6 +656,27 @@ bool isSensitive(FieldParser::Kind kind)
 
 } // namespace
 
+QVector<QRect> OcrEngine::sensitiveBoxes() const
+{
+    QVector<QRect> boxes;
+    const QString text = m_result.text();
+
+    for (const FieldParser::Field &field : FieldParser::scan(text)) {
+        if (!isSensitive(field.kind)) {
+            continue;
+        }
+
+        // One box per word rather than one around the lot: a field that wraps
+        // across two lines would otherwise be covered by a rectangle spanning
+        // everything between them, including whatever sits to the side.
+        for (int index : m_result.wordsForRange(field.start, field.length)) {
+            boxes.append(m_result.words().at(index).box);
+        }
+    }
+
+    return boxes;
+}
+
 int OcrEngine::sensitiveCount() const
 {
     int count = 0;
