@@ -77,6 +77,19 @@ Page {
                 text: qsTr("Moji (文字) is Japanese for a written character.")
             }
 
+            // Where the look comes from. Kept to one sentence on purpose: the
+            // full account is in qml/Mochi/README.md, and an About page is not
+            // where a design language gets explained - it is where it gets
+            // credited.
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                wrapMode: Text.Wrap
+                font.pixelSize: Theme.fontSizeExtraSmall
+                color: Tokens.secondaryColor
+                text: qsTr("The interface is Mochi, a small module built for this app: grouped panels, quiet hairlines and short decelerating motion, borrowed from webOS — Mojo's lists, Onyx's controls, Enyo's timing.")
+            }
+
             Label {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin

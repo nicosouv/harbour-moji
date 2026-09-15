@@ -47,6 +47,10 @@
         <source>Developed with ❤️ for Sailfish OS</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>The interface is Mochi, a small module built for this app: grouped panels, quiet hairlines and short decelerating motion, borrowed from webOS — Mojo's lists, Onyx's controls, Enyo's timing.</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>CameraPage</name>
