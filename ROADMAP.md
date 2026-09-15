@@ -49,11 +49,11 @@ Current release: **v0.1.14**. Ten test suites, all green.
   its. A field that does not check out is reported as such, because "read this
   line again" beats a confident wrong answer — and OCR confuses 8 with B, which is
   exactly what a checksum is for.
-- **Searchable PDF, offline**: the photo with an invisible text layer positioned
-  over the words, so the page is searchable in any reader.
-- **Tables to CSV**: a table is a block whose words pile into vertical bands, and
-  the column boundaries are the channels no word crosses. Works on an unruled
-  receipt. Refusing a paragraph matters as much as finding a table.
+- **A PDF of the photo and its text, offline**: the photograph on the first page,
+  the text on the pages after it. It carries the *amended* text — the version that
+  laid the words invisibly over the photograph carried the raw reading instead, so
+  a word corrected by hand went into the file uncorrected and nobody could see it
+  had, because the text was invisible.
 - **Private numbers painted out**: account and card numbers blacked into a saved
   copy — flattened into the pixels, because an overlay a viewer can switch off
   would look like redaction while being nothing of the sort.
@@ -246,8 +246,6 @@ In the order I would do them.
 - **The deskew has not been proven on a hard case.** It is covered by tests and
   it keeps its result only when it scores better, so it cannot make things worse;
   whether it makes them much better on a badly-angled photo is still unmeasured.
-- **Two tables on one page**: the CSV export takes the first. Rare enough to wait
-  until someone meets it.
 - **Mochi has diverged from harbour-imtrix.** The copy here is ahead — `Banner`,
   the native Silica variants in ambience mode, three themes. Converging them is a
   copy, but imtrix has a large amount of unrelated work in flight, so it is not
@@ -257,8 +255,8 @@ In the order I would do them.
 
 Nothing here builds on the development machine, so the only feedback before a tag
 is what plain Qt5 can check. That is why the layers that decide anything —
-`ocrresult`, `textlayout`, `fieldparser`, `imageprep`, `tableextract`,
-`historystore`, `pdfexport` — hold no Tesseract and no Qt Quick.
+`ocrresult`, `textlayout`, `fieldparser`, `imageprep`, `languagenames`,
+`scenetext`, `pdfpage`, `historystore`, `pdfexport` — hold no Tesseract and no Qt Quick.
 
 Four classes of bug reached a release before becoming a static check, and each
 one is now caught in CI rather than on a phone:

@@ -83,13 +83,14 @@ slogan — as a build rule:
   under a bar is enough to read a digit. Only IBANs, card numbers and passport
   codes are hidden by default - an email is found too, and deciding it is private
   would be deciding for the user.
-- **A table is measurable without anything declaring itself one.** Tesseract
-  reports words, lines and blocks, never columns - but a table is a block whose
-  words pile into vertical bands, so the column boundaries are the channels no
-  word crosses. `tableextract` finds them against the median word height, which is
-  what makes one threshold work at any camera distance. A ruled table and a set of
-  aligned columns are indistinguishable at that level, which is why it works on a
-  receipt. Refusing a paragraph matters as much as finding a table.
+- **The CSV table export was removed, and the reasoning is worth keeping.** A
+  table is a block whose words pile into vertical bands, so the columns are the
+  channels no word crosses, measured against the median word height - which is
+  what made one threshold work at any camera distance. It worked. Nobody used it:
+  a phone is not where a spreadsheet gets made, and the export wrote a file to
+  Downloads that then had to be moved somewhere useful. `git log` has
+  `tableextract.cpp` and its tests if the idea comes back; the lesson is that a
+  feature being clever and correct is not the same as it being wanted.
 - **OCR output is untrusted text.** It is whatever was in front of the camera. A
   `Label` with `textFormat: Text.RichText` showing recognised text will follow
   `<img>` tags that were photographed, which turns a picture into a network

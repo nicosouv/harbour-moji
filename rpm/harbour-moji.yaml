@@ -26,6 +26,8 @@ Description: |
   - Raw text, or tap a word in the photo to take out its line or paragraph
   - IBANs, card numbers, ISBNs and passport codes checked against their own
     checksums, so a digit the camera misread is caught rather than copied
+  - Reads PDFs as well as photographs
+  - Exports the photo and its text as a PDF, or shares the text with any app
   - Interface in English and French
   - webOS-inspired interface, with a Sailfish ambience theme
 
