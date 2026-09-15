@@ -17,26 +17,42 @@ CFLAGS=$(pkg-config --cflags Qt5Core Qt5Gui Qt5Qml Qt5Quick Qt5Concurrent Qt5Sql
 # ocrengine.cpp includes Tesseract's headers. The host package is used purely to
 # have something to include - the version differs from the cross-compiled one, so
 # this proves the call signatures are plausible, not that the ABI matches.
+# Files that cannot be compiled without a library the host may not have. Skipped
+# rather than failed, and the skip has to be real: the first version of this said
+# "will not be checked" and then compiled the file anyway, so a machine without
+# Poppler failed the lane with a missing header while claiming to have skipped it.
+SKIP=""
+
 if pkg-config --exists tesseract; then
     CFLAGS="$CFLAGS $(pkg-config --cflags tesseract lept)"
 else
     echo "warning: no host tesseract; ocrengine.cpp will not be checked" >&2
+    SKIP="$SKIP src/ocrengine.cpp"
 fi
 
-# pdfrender.cpp includes Poppler's headers, for the same reason and with the same
-# caveat: the host package proves the calls are plausible, not that the device's
-# version agrees. Sailfish ships poppler-qt5 as part of the platform, so unlike
-# Tesseract this one is not cross-compiled into 3rdparty/.
+# pdfrender.cpp includes Poppler's headers, for the same reason and with one
+# difference worth knowing: Sailfish ships poppler-qt5 as part of the platform and
+# the device's copy is *newer* than the host's, which is the reverse of the Qt
+# situation and makes this check unusually representative.
 if pkg-config --exists poppler-qt5; then
     CFLAGS="$CFLAGS $(pkg-config --cflags poppler-qt5)"
 else
     echo "warning: no host poppler-qt5; pdfrender.cpp will not be checked" >&2
+    SKIP="$SKIP src/pdfrender.cpp"
 fi
 
 status=0
 checked=0
+skipped=0
 
 while IFS= read -r file; do
+    case " $SKIP " in
+        *" $file "*)
+            skipped=$((skipped + 1))
+            continue
+            ;;
+    esac
+
     if g++ -fsyntax-only -std=c++14 -fPIC $CFLAGS -Isrc "$file"; then
         checked=$((checked + 1))
     else
@@ -46,7 +62,11 @@ while IFS= read -r file; do
 done < <(find src -name '*.cpp' | sort)
 
 if [ $status -eq 0 ]; then
-    echo "syntax check passed on $checked files"
+    if [ $skipped -gt 0 ]; then
+        echo "syntax check passed on $checked files ($skipped skipped, no host library)"
+    else
+        echo "syntax check passed on $checked files"
+    fi
 fi
 
 exit $status

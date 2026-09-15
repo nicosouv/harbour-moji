@@ -67,7 +67,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             qtbase5-dev qtdeclarative5-dev g++ pkg-config \
-            libtesseract-dev libleptonica-dev
+            libtesseract-dev libleptonica-dev libpoppler-qt5-dev
 
       - name: Compile-check src/
         run: bash tests/syntax-check.sh

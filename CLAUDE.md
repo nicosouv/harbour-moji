@@ -102,10 +102,14 @@ slogan — as a build rule:
   yields word, line, paragraph and block boxes with a confidence each. Tapping a
   word and growing the selection to its real block is only possible because that
   structure exists — a detector/recogniser pair returns strings and nothing else.
-- **Poppler is the one dependency where the device is ahead of the host.** Sailfish
-  5.0.0.43 ships `poppler-qt5` 24.08 - checked, not assumed - against Ubuntu
-  24.04's 24.02, so `tests/syntax-check.sh` is genuinely representative for
-  `pdfrender.cpp`, which is not true of anything else here. It is also not
+- **Poppler is the one dependency where the device is ahead of the host.** The
+  build target (5.0.0.43) has `poppler-qt5` 24.08 and the phone (5.2.0.17) has
+  25.12, against Ubuntu 24.04's 24.02 - all checked, none assumed. So
+  `tests/syntax-check.sh` is genuinely representative for `pdfrender.cpp`, which is
+  not true of anything else here. The soname is `libpoppler-qt5.so.1` on all three,
+  so the `Requires` rpm generates from the link is satisfied: build against the
+  older, run on the newer, which is the safe direction and the one CI already
+  takes. It is also not
   cross-compiled: Poppler is on every device because the platform's own document
   viewer uses it, so it is a `BuildRequires` and a link line rather than a fourth
   thing in `3rdparty/`. The consequence to remember is the licence - Poppler is
