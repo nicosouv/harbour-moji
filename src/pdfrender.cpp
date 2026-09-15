@@ -3,7 +3,9 @@
 #include <memory>
 
 #include <QCryptographicHash>
+#include <QDateTime>
 #include <QDir>
+#include <QFile>
 #include <QFileInfo>
 #include <QImage>
 #include <QStandardPaths>
@@ -82,6 +84,35 @@ QString localPath(const QUrl &url)
 PdfRender::PdfRender(QObject *parent)
     : QObject(parent)
 {
+    // Anything left behind by a previous run goes now, rather than lingering until
+    // the next PDF is opened - which might be never.
+    pruneCache();
+}
+
+QString PdfRender::cacheDirectory() const
+{
+    return QStandardPaths::writableLocation(QStandardPaths::CacheLocation)
+           + QStringLiteral("/pages");
+}
+
+void PdfRender::pruneCache()
+{
+    QDir dir(cacheDirectory());
+    if (!dir.exists()) {
+        return;
+    }
+
+    // Oldest first, so the newest MaxCachedPages survive.
+    const QFileInfoList files =
+        dir.entryInfoList(QStringList { QStringLiteral("*.jpg") },
+                          QDir::Files, QDir::Time | QDir::Reversed);
+
+    const int excess = files.size() - MaxCachedPages;
+    for (int i = 0; i < excess; ++i) {
+        if (!QFile::remove(files.at(i).absoluteFilePath())) {
+            qCWarning(lcMoji) << "could not drop a cached page";
+        }
+    }
 }
 
 bool PdfRender::isPdf(const QUrl &fileUrl) const
@@ -148,7 +179,7 @@ QUrl PdfRender::renderPage(const QUrl &fileUrl, int pageNumber)
     // name: two documents called scan.pdf in different folders are two documents.
     const QString key = QString::fromLatin1(
         QCryptographicHash::hash(path.toUtf8(), QCryptographicHash::Sha1).toHex());
-    const QString cache = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
+    const QString cache = cacheDirectory();
     QDir().mkpath(cache);
     const QString target = QStringLiteral("%1/%2-p%3.jpg").arg(cache, key)
                                .arg(pageNumber);
@@ -162,5 +193,10 @@ QUrl PdfRender::renderPage(const QUrl &fileUrl, int pageNumber)
     }
 
     qCDebug(lcMoji) << "rendered to" << target << rendered.size();
+
+    // Kept small, every time. A document read page by page would otherwise leave
+    // one image per page behind it.
+    pruneCache();
+
     return QUrl::fromLocalFile(target);
 }

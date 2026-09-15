@@ -54,7 +54,22 @@ public:
 
     Q_INVOKABLE QString lastError() const { return m_lastError; }
 
+    // Throws away rendered pages, oldest first, until at most MaxCachedPages
+    // remain. Called after every render and once at startup.
+    //
+    // These are full-page images of whatever the user opened - a payslip, an
+    // attestation, a medical letter - written in the clear, and nothing else would
+    // ever remove them. A cache that grows without bound is a nuisance; a cache of
+    // other people's documents that grows without bound is a different thing.
+    Q_INVOKABLE void pruneCache();
+
+    // Enough that stepping back and forth through a document does not re-render,
+    // few enough that a forgotten cache is small.
+    static const int MaxCachedPages = 8;
+
 private:
+    QString cacheDirectory() const;
+
     QString m_lastError;
 };
 
