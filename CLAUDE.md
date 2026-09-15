@@ -102,6 +102,19 @@ slogan — as a build rule:
   yields word, line, paragraph and block boxes with a confidence each. Tapping a
   word and growing the selection to its real block is only possible because that
   structure exists — a detector/recogniser pair returns strings and nothing else.
+- **Poppler is the one dependency where the device is ahead of the host.** Sailfish
+  5.0.0.43 ships `poppler-qt5` 24.08 - checked, not assumed - against Ubuntu
+  24.04's 24.02, so `tests/syntax-check.sh` is genuinely representative for
+  `pdfrender.cpp`, which is not true of anything else here. It is also not
+  cross-compiled: Poppler is on every device because the platform's own document
+  viewer uses it, so it is a `BuildRequires` and a link line rather than a fourth
+  thing in `3rdparty/`. The consequence to remember is the licence - Poppler is
+  GPL-2.0-or-later, so the shipped binary is GPL even though this source stays
+  MIT.
+  Still written defensively: `Poppler::Document::load()` and `Document::page()`
+  changed from raw pointers to `std::unique_ptr` around 22.x, and `pdfrender.cpp`
+  has a two-overload `adopt()` so either spelling compiles. Both ends happen to be
+  new enough today; the day Jolla pins an older one is not the day to find out.
 - **Every off-device lane compiles against a newer Qt than the device has.**
   Ubuntu has 5.15, Sailfish has 5.6, so a call added in 5.8 passes
   `tests/syntax-check.sh` and fails inside the RPM build on a tag.
@@ -224,12 +237,29 @@ slogan — as a build rule:
   so the table can be deleted if a future Qt closes it.
 - **Tesseract is not state of the art, and knowing where it is weak is the job.**
   It is trained on clean scans near 300 DPI; a hand-held photo of a glossy page at
-  an angle is close to its worst case. Three levers, in order of value: local
-  binarisation before handing it the image (free - `ImagePrep::binarised`, because
+  an angle is close to its worst case. The levers, in order of what they are
+  actually worth here: say the right page segmentation mode (free, and it was
+  wrong); local binarisation where it helps (free - `ImagePrep::binarised`, because
   Tesseract's internal Otsu picks *one* threshold for the whole page and a shadow
-  gradient defeats that); `tessdata_best` instead of `tessdata_fast`, which is
-  four times the size for a real accuracy gain; and a different engine entirely,
-  which is a project rather than a change.
+  gradient defeats that); and a different engine entirely, which is a project
+  rather than a change.
+- **`tessdata_best` is not one of those levers, on photographs.** This file used to
+  claim it was "four times the size for a real accuracy gain". Measured through the
+  pipeline as it stands, on the five photographs, `fra` best (4.0MB) against fast
+  (1.1MB):
+
+  | photograph | fast | best |
+  |---|---|---|
+  | magazine page | 66 words at 91.9% | 66 at 91.8%, same text |
+  | dense spread | 214 at 85.6% | 214 at 86.5% |
+  | poster, at night | 63 at 70.4% | 61 at 72.8% — clearly better text |
+  | road sign | 7 at 67.3% | 7 at 62.8%, same text |
+  | sign behind a fence | 11 at 50.0% | 13 at 31.3%, and it picked the wrong angle |
+
+  One win, one regression, three ties, for 3.5x the bytes - and no time difference
+  either way, which was also not expected. Its reputation comes from clean scans,
+  which is what it was measured on. Do not spend the RPM on it without measuring
+  the photographs you actually care about.
 - `TessBaseAPI` is not thread-safe and initialisation is slow. One instance,
   owned by the engine, driven from a worker thread via `QtConcurrent`; never one
   per request.

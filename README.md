@@ -115,7 +115,7 @@ No Sailfish SDK needed, and no Qt on the host either:
 docker run --rm -v "$PWD:/src:ro" -w /work ubuntu:24.04 bash -c '
   apt-get update -qq && apt-get install -y -qq --no-install-recommends \
     qtbase5-dev qtdeclarative5-dev libqt5sql5-sqlite cmake ninja-build \
-    g++ pkg-config python3
+    g++ pkg-config python3 libtesseract-dev libleptonica-dev libpoppler-qt5-dev
   cp -r /src/. /work && cd /work
   python3 scripts/check_qml.py && python3 scripts/check_translations.py
   python3 scripts/check_qt56.py
@@ -137,6 +137,18 @@ This is not optional diligence. `PSM_SINGLE_BLOCK` survived fourteen releases
 because nothing ever measured it; five photographs and an hour found it, the
 missing 180° pass, and a thresholding step that was destroying every photograph
 taken at night.
+
+### Licence, and why the binary is GPL
+
+The code here is MIT. The **distributed binary is GPLv2+**, because it links
+Poppler to render PDF pages and Poppler is GPLv2-or-later. MIT is
+GPL-compatible, so that combination is one the binary can legitimately be
+distributed under; the source stays MIT and remains reusable as MIT, and the
+source offer the GPL requires is this repository.
+
+Poppler is not vendored. Sailfish ships `poppler-qt5` as part of the platform —
+the system document viewer uses it — so this is a `BuildRequires` and a link
+line, not a fourth thing in `3rdparty/`.
 
 ### Native dependencies
 

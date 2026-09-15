@@ -147,6 +147,34 @@ under **Next**.
   "rotate the view", which is presumably why it survived; the view now turns itself
   on every photograph, so it was about to be on the ordinary path.
 
+### Reading PDFs
+
+- **Documents can be picked, and a PDF is rendered before it is read.** Poppler
+  does the rasterising, and it needed no cross-compile: Sailfish ships
+  `poppler-qt5` as part of the platform because the system document viewer uses
+  it, and the device's copy (24.08) is actually *newer* than the one the
+  off-device syntax check compiles against (24.02) — the reverse of the Qt
+  situation, and worth not forgetting.
+- **The resolution is the only decision, so it is the only thing tested.** A PDF
+  page has no pixels, it has a size in points, and both ways of choosing wrong are
+  quiet: too low and the recogniser sees text four pixels tall and reports
+  nothing, which reads as a bad PDF; too high and an A4 page is 140MB of ARGB32
+  and the process is killed, which reads as a crash. Aim at 300 DPI, the
+  resolution Tesseract's models were trained near, and come down only far enough
+  to fit the budget `ImagePrep` imposes anyway. A floor under that was written
+  first and a test killed it: an A0 poster at 72 DPI is already over budget.
+- **A page that already carries text says so.** A PDF that was exported rather
+  than scanned has the text in it exactly, and recognising a picture of that text
+  can only be worse. It says so and reads it anyway, because a page can carry a
+  text layer over half of what is on it and the reading is still what was asked
+  for.
+- **`Documents` added to Sailjail.** The same trap as `MediaIndexing`, one
+  directory over: without it the picker opens on nothing, with no error at all.
+- **The binary is now GPLv2+.** Poppler is GPL-2.0-or-later, so linking it makes
+  the distributed binary GPL. The source here stays MIT and stays reusable as MIT
+  — MIT is GPL-compatible, which is what makes the combination distributable — and
+  the source offer the GPL asks for is this repository. See README.
+
 ### Not measurable from here
 
 - **The camera tags which way up it was.** Nothing set the capture orientation, so
@@ -167,11 +195,18 @@ In the order I would do them.
    and `git hash-object` recomputes it locally. What is missing is the build:
    noarch RPMs, one per script group, attached to the release. No cross-compile
    needed — they are data. **96 languages are unreachable until this lands.**
-2. **`osd.traineddata` as a pack.** It would give orientation *and* script in one
+2. **Better recognition models are not the answer, and this is now measured.**
+   `tessdata_best` against the `tessdata_fast` that ships, through the pipeline as
+   it stands, on the same five photographs: one clear win, one regression, three
+   ties, for 3.5x the bytes and no time difference either way. Its reputation
+   comes from clean scans, which is what it was benchmarked on. The numbers are in
+   CLAUDE.md. The ceiling here is Tesseract itself, not the model inside it, which
+   is what item 4 is for.
+3. **`osd.traineddata` as a pack.** It would give orientation *and* script in one
    pass instead of four, cutting recognition time by roughly three quarters. 10MB,
    and an unverified question about whether it survives the `--disable-legacy`
    the engine is built with — which is why it is a pack and not a default.
-3. **A scene-text engine, beside Tesseract rather than instead of it.** Started:
+4. **A scene-text engine, beside Tesseract rather than instead of it.** Started:
    `src/scenetext.h` holds the decision record and the detector's output stage,
    which is the part with no neural network in it and therefore the part `tests/`
    can reach.
@@ -196,7 +231,7 @@ In the order I would do them.
    replace Tesseract and is not meant to — a detector/recogniser pair returns
    strings and boxes and no structure, and tapping a word to grow the selection to
    its paragraph needs paragraphs to exist.
-4. **Comparing two photos of the same document**, to see what changed between two
+5. **Comparing two photos of the same document**, to see what changed between two
    versions of a contract.
 
 ## Known limits
