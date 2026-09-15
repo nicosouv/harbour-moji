@@ -347,20 +347,16 @@
         <translation>Partager le texte</translation>
     </message>
     <message>
-        <source>Sharing is not available on this device</source>
-        <translation>Le partage n'est pas disponible sur cet appareil</translation>
-    </message>
-    <message>
-        <source>There is no text to share</source>
-        <translation>Il n'y a pas de texte à partager</translation>
-    </message>
-    <message>
         <source>Read the next page</source>
         <translation>Lire la page suivante</translation>
     </message>
     <message>
         <source>Page %1 of %2 — %3 words</source>
         <translation>Page %1 sur %2 — %3 mots</translation>
+    </message>
+    <message>
+        <source>Recognised text</source>
+        <translation>Texte reconnu</translation>
     </message>
 </context>
 <context>
@@ -481,6 +477,47 @@
     <message>
         <source>The rendered page could not be saved.</source>
         <translation>La page rendue n'a pas pu être enregistrée.</translation>
+    </message>
+</context>
+<context>
+    <name>CoverPage</name>
+    <message>
+        <source>%1 words</source>
+        <translation>%1 mots</translation>
+    </message>
+    <message>
+        <source>%1%</source>
+        <translation>%1 %</translation>
+    </message>
+    <message>
+        <source>Contains private numbers</source>
+        <translation>Contient des numéros privés</translation>
+    </message>
+    <message>
+        <source>Moji OCR</source>
+        <translation>Moji OCR</translation>
+    </message>
+    <message>
+        <source>Reading…</source>
+        <translation>Lecture…</translation>
+    </message>
+</context>
+<context>
+    <name>ShareHelper</name>
+    <message>
+        <source>Sharing is not available on this device</source>
+        <translation>Le partage n'est pas disponible sur cet appareil</translation>
+    </message>
+    <message>
+        <source>There is no text to share</source>
+        <translation>Il n'y a pas de texte à partager</translation>
+    </message>
+</context>
+<context>
+    <name>harbour-moji</name>
+    <message>
+        <source>Recognised text</source>
+        <translation>Texte reconnu</translation>
     </message>
 </context>
 </TS>

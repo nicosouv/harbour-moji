@@ -347,19 +347,15 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Sharing is not available on this device</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>There is no text to share</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Read the next page</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Page %1 of %2 — %3 words</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Recognised text</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -480,6 +476,47 @@
     </message>
     <message>
         <source>The rendered page could not be saved.</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>CoverPage</name>
+    <message>
+        <source>%1 words</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>%1%</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Contains private numbers</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Moji OCR</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Reading…</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ShareHelper</name>
+    <message>
+        <source>Sharing is not available on this device</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>There is no text to share</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>harbour-moji</name>
+    <message>
+        <source>Recognised text</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

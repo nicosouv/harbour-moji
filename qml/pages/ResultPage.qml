@@ -5,6 +5,7 @@
 import QtQuick 2.5
 import Sailfish.Silica 1.0
 import Mochi 1.0
+import "../components"
 
 // The photo, with the recognised text available by touching it.
 //
@@ -123,7 +124,8 @@ Page {
             // somewhere else, and until now the only way out was the clipboard
             // and another app. The Sharing permission has been in the sandbox
             // since the first release with nothing asking for it.
-            page.shareText(page.showingStored ? page.storedText : ocr.editedText)
+            sharer.share(page.showingStored ? page.storedText : ocr.editedText,
+                         qsTr("Recognised text"))
         } else if (id === "nextpage") {
             page.readNextPage()
         } else if (id === "again") {
@@ -158,46 +160,6 @@ Page {
                             documentUrl: page.documentUrl,
                             documentPage: next,
                             documentPages: page.documentPages })
-    }
-
-    // Hands the text to whatever the user has installed that accepts text.
-    //
-    // Built here rather than with a ShareAction declared in the page, because the
-    // text is not known until the moment the verb is used and a declarative
-    // action would have to be rebuilt anyway.
-    function shareText(text) {
-        if (text === "") {
-            banner.show(qsTr("There is no text to share"))
-            return
-        }
-
-        // Built from a string at the moment it is used, rather than imported at
-        // the top of the file.
-        //
-        // An import names a module the device may not have, and a QML file that
-        // imports something missing does not lose that feature - the whole file
-        // fails to load and the page comes up blank, with the reason in the
-        // journal. That has cost this project a release once already
-        // (Image.autoTransform under the wrong QtQuick), so a component that is
-        // not certain to exist is built where a failure can be caught and said
-        // out loud.
-        var action = null
-        try {
-            action = Qt.createQmlObject(
-                'import QtQuick 2.0; import Sailfish.Share 1.0; ShareAction { }',
-                page, "shareAction")
-        } catch (e) {
-            action = null
-        }
-
-        if (action === null) {
-            banner.show(qsTr("Sharing is not available on this device"))
-            return
-        }
-
-        action.resources = [ { "type": "text/plain", "data": text } ]
-        action.trigger()
-        action.destroy()
     }
 
     function editWord(index, current) {
@@ -1036,5 +998,14 @@ Page {
 
     Banner {
         id: banner
+    }
+
+    // Shared with the cover, so the two cannot drift apart. It says nothing
+    // itself; the page decides where a failure is shown, and here that is the
+    // banner.
+    ShareHelper {
+        id: sharer
+
+        onFailed: banner.show(reason)
     }
 }
