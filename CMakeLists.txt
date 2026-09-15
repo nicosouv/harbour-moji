@@ -41,7 +41,17 @@ else()
     pkg_check_modules(TESSERACT REQUIRED tesseract lept)
 endif()
 
-# The pure layers: no Tesseract, no OpenCV, no Qt Quick. Everything that makes a
+# Poppler renders the PDF pages. Unlike Tesseract it is not cross-compiled into
+# 3rdparty/ and does not need to be: Sailfish ships poppler-qt5 as part of the
+# platform, because the system document viewer uses it, and the SDK carries
+# poppler-qt5-devel. So this is a pkg-config dependency and a link line.
+#
+# It is GPL-2.0-or-later, which makes the distributed binary GPL even though this
+# source stays MIT. MIT is GPL-compatible, so that is a licence the combination
+# can be distributed under; see README.
+pkg_check_modules(POPPLER REQUIRED poppler-qt5)
+
+# The pure layers: no Tesseract, no Poppler, no Qt Quick. Everything that makes a
 # decision lives here so tests/ can reach it with plain Qt5, which is the only
 # feedback this project gets before a tag.
 set(CORE_SOURCES
@@ -52,6 +62,7 @@ set(CORE_SOURCES
     src/tableextract.cpp
     src/languagenames.cpp
     src/scenetext.cpp
+    src/pdfpage.cpp
 )
 
 set(CORE_HEADERS
@@ -62,6 +73,7 @@ set(CORE_HEADERS
     src/tableextract.h
     src/languagenames.h
     src/scenetext.h
+    src/pdfpage.h
 )
 
 set(SOURCES
@@ -71,6 +83,7 @@ set(SOURCES
     src/ocrengine.cpp
     src/historystore.cpp
     src/pdfexport.cpp
+    src/pdfrender.cpp
     ${CORE_SOURCES}
 )
 
@@ -80,6 +93,7 @@ set(HEADERS
     src/ocrengine.h
     src/historystore.h
     src/pdfexport.h
+    src/pdfrender.h
     ${CORE_HEADERS}
 )
 
@@ -91,7 +105,10 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE APP_VERSION="${PROJECT_VERSIO
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/src
     ${TESSERACT_INCLUDE_DIRS}
+    ${POPPLER_INCLUDE_DIRS}
 )
+
+link_directories(${POPPLER_LIBRARY_DIRS})
 
 target_link_libraries(${PROJECT_NAME}
     Qt5::Core
@@ -101,6 +118,7 @@ target_link_libraries(${PROJECT_NAME}
     Qt5::Concurrent
     Qt5::Sql
     ${TESSERACT_LIBRARIES}
+    ${POPPLER_LIBRARIES}
 )
 
 install(TARGETS ${PROJECT_NAME}

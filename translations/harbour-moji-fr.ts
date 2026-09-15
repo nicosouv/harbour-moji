@@ -128,6 +128,18 @@
         <source>Take a photo</source>
         <translation>Prendre une photo</translation>
     </message>
+    <message>
+        <source>Choose a document</source>
+        <translation>Choisir un document</translation>
+    </message>
+    <message>
+        <source>A PDF, or an image kept in Documents</source>
+        <translation>Un PDF, ou une image rangée dans Documents</translation>
+    </message>
+    <message>
+        <source>This page already carries text. Reading it as a picture anyway.</source>
+        <translation>Cette page contient déjà du texte. Lecture en image malgré tout.</translation>
+    </message>
 </context>
 <context>
     <name>OcrEngine</name>
@@ -423,6 +435,40 @@
     <message>
         <source>Photo no longer on the device</source>
         <translation>Photo absente de l'appareil</translation>
+    </message>
+</context>
+<context>
+    <name>PdfPagePage</name>
+    <message>
+        <source>Choose a page</source>
+        <translation>Choisir une page</translation>
+    </message>
+    <message>
+        <source>%1 pages</source>
+        <translation>%1 pages</translation>
+    </message>
+    <message>
+        <source>Pages</source>
+        <translation>Pages</translation>
+    </message>
+    <message>
+        <source>Page %1</source>
+        <translation>Page %1</translation>
+    </message>
+</context>
+<context>
+    <name>PdfRender</name>
+    <message>
+        <source>That page could not be rendered.</source>
+        <translation>Cette page n'a pas pu être rendue.</translation>
+    </message>
+    <message>
+        <source>That page is not in the document.</source>
+        <translation>Cette page n'existe pas dans le document.</translation>
+    </message>
+    <message>
+        <source>The rendered page could not be saved.</source>
+        <translation>La page rendue n'a pas pu être enregistrée.</translation>
     </message>
 </context>
 </TS>

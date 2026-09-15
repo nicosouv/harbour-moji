@@ -18,6 +18,71 @@ Page {
                        { imageUrl: "file://" + path })
     }
 
+    // A picked document, which may be a PDF and may be an image someone keeps in
+    // Documents rather than in the gallery.
+    //
+    // A PDF has no pixels, so one page of it is rendered to an image first and
+    // everything downstream carries on unchanged - the result page, the
+    // searchable PDF export, the redaction and the history all work on an image
+    // file and none of them has to learn what a PDF is.
+    function openDocument(path) {
+        var url = "file://" + path
+
+        if (!pdf.isPdf(url)) {
+            // Not a PDF: the picker lists images kept in Documents too, and
+            // reading one needs nothing special.
+            pageStack.completeAnimation()
+            pageStack.replace(Qt.resolvedUrl("ResultPage.qml"), { imageUrl: url })
+            return
+        }
+
+        var pages = pdf.pageCount(url)
+        if (pages < 1) {
+            pageStack.completeAnimation()
+            pageStack.pop()
+            banner.show(pdf.lastError())
+            return
+        }
+
+        if (pages === 1) {
+            page.readPdfPage(url, 1, true)
+            return
+        }
+
+        // More than one page, so ask. Replace rather than push: Back from the
+        // chooser should return here, not to the picker.
+        pageStack.completeAnimation()
+        var chooser = pageStack.replace(Qt.resolvedUrl("PdfPagePage.qml"),
+                                        { documentUrl: url, pageCount: pages })
+        chooser.chosen.connect(function (number) {
+            page.readPdfPage(url, number, true)
+        })
+    }
+
+    function readPdfPage(url, number, replace) {
+        var rendered = pdf.renderPage(url, number)
+        if (rendered == "") {
+            banner.show(pdf.lastError())
+            return
+        }
+
+        // A PDF that was exported rather than scanned carries its text exactly,
+        // and recognising a picture of that text can only be worse. Say so; do
+        // not decide - a page can carry a text layer over half of what is on it,
+        // and the reading is still the thing that was asked for.
+        var existing = pdf.embeddedText(url, number)
+        if (existing !== "") {
+            banner.show(qsTr("This page already carries text. Reading it as a picture anyway."))
+        }
+
+        pageStack.completeAnimation()
+        if (replace) {
+            pageStack.replace(Qt.resolvedUrl("ResultPage.qml"), { imageUrl: rendered })
+        } else {
+            pageStack.push(Qt.resolvedUrl("ResultPage.qml"), { imageUrl: rendered })
+        }
+    }
+
     Rectangle {
         anchors.fill: parent
         color: Tokens.pageColor
@@ -86,6 +151,15 @@ Page {
                     accent: true
                     glyph: "+"
                     onClicked: pageStack.push(imagePicker)
+                }
+
+                PanelRow {
+                    width: parent.width
+                    title: qsTr("Choose a document")
+                    detail: qsTr("A PDF, or an image kept in Documents")
+                    accent: true
+                    glyph: "▤"
+                    onClicked: pageStack.push(documentPicker)
                 }
             }
 
@@ -157,6 +231,29 @@ Page {
 
     RemorsePopup {
         id: remorse
+    }
+
+    Banner {
+        id: banner
+    }
+
+    Component {
+        id: documentPicker
+
+        // FilePickerPage, not DocumentPickerPage: the latter lists what the
+        // tracker index calls a document, which is a narrower set than "the
+        // things in my Documents folder" and leaves out an image kept there.
+        // The filter is on the name because that is what the picker offers.
+        FilePickerPage {
+            title: qsTr("Choose a document")
+            nameFilters: [ "*.pdf", "*.jpg", "*.jpeg", "*.png", "*.tif", "*.tiff" ]
+
+            onSelectedContentPropertiesChanged: {
+                if (selectedContentProperties.filePath) {
+                    page.openDocument(selectedContentProperties.filePath)
+                }
+            }
+        }
     }
 
     Component {

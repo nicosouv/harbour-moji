@@ -23,6 +23,16 @@ else
     echo "warning: no host tesseract; ocrengine.cpp will not be checked" >&2
 fi
 
+# pdfrender.cpp includes Poppler's headers, for the same reason and with the same
+# caveat: the host package proves the calls are plausible, not that the device's
+# version agrees. Sailfish ships poppler-qt5 as part of the platform, so unlike
+# Tesseract this one is not cross-compiled into 3rdparty/.
+if pkg-config --exists poppler-qt5; then
+    CFLAGS="$CFLAGS $(pkg-config --cflags poppler-qt5)"
+else
+    echo "warning: no host poppler-qt5; pdfrender.cpp will not be checked" >&2
+fi
+
 status=0
 checked=0
 

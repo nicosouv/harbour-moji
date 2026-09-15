@@ -20,6 +20,10 @@ Name=Moji OCR
 # permission's own description is "List files stored on device".
 #
 # RemovableMedia is there for the same reason on an SD card.
-Permissions=Camera;Pictures;RemovableMedia;MediaIndexing;Downloads;Sharing
+#
+# Documents is the same trap one directory over: the document picker lists PDFs
+# out of the tracker index, and without this the page opens empty with no error,
+# exactly as the gallery picker did before MediaIndexing was added.
+Permissions=Camera;Pictures;Documents;RemovableMedia;MediaIndexing;Downloads;Sharing
 OrganizationName=harbour-moji
 ApplicationName=harbour-moji

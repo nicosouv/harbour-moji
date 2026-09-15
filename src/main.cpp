@@ -15,6 +15,7 @@
 #include "historystore.h"
 #include "logging.h"
 #include "ocrengine.h"
+#include "pdfrender.h"
 #include "settings.h"
 
 int main(int argc, char *argv[])
@@ -29,6 +30,7 @@ int main(int argc, char *argv[])
     const QString tessdataPath = appDir + QStringLiteral("/tessdata");
     Settings *settings = new Settings(tessdataPath, app.data());
     OcrEngine *engine = new OcrEngine(tessdataPath, app.data());
+    PdfRender *pdf = new PdfRender(app.data());
 
     // The history lives with the app's own data, not beside the photos: it holds
     // recognised text, which is a different thing from the pictures and should not
@@ -72,6 +74,7 @@ int main(int argc, char *argv[])
     view->rootContext()->setContextProperty(QStringLiteral("settings"), settings);
     view->rootContext()->setContextProperty(QStringLiteral("ocr"), engine);
     view->rootContext()->setContextProperty(QStringLiteral("history"), history);
+    view->rootContext()->setContextProperty(QStringLiteral("pdf"), pdf);
     view->rootContext()->setContextProperty(QStringLiteral("tessdataPath"), tessdataPath);
 #ifdef APP_VERSION
     view->rootContext()->setContextProperty(QStringLiteral("appVersion"),

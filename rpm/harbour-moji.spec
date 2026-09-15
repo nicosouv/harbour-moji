@@ -17,18 +17,20 @@ Summary:    Moji OCR - read text from photos, offline
 Version:    0.1.0
 Release:    1
 Group:      Qt/Qt
-License:    MIT (code) / Apache-2.0 (Tesseract and its language data)
+License:    GPLv2+ (binary, via Poppler) / MIT (code) / Apache-2.0 (Tesseract and its language data)
 URL:        https://github.com/nicosouv/harbour-moji
 Source0:    %{name}-%{version}.tar.bz2
 Source100:  harbour-moji.yaml
 Requires:   sailfishsilica-qt5 >= 0.10.9
 Requires:   qt5-qtdeclarative-import-multimedia
+Requires:   poppler-qt5
 BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5Gui)
 BuildRequires:  pkgconfig(Qt5Qml)
 BuildRequires:  pkgconfig(Qt5Quick)
 BuildRequires:  pkgconfig(Qt5Concurrent)
 BuildRequires:  pkgconfig(Qt5Sql)
+BuildRequires:  pkgconfig(poppler-qt5)
 BuildRequires:  qt5-qttools-linguist
 BuildRequires:  cmake
 BuildRequires:  desktop-file-utils

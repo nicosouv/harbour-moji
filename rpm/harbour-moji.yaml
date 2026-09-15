@@ -6,7 +6,7 @@ Release: 1
 # https://github.com/mer-tools/spectacle/blob/master/data/GROUPS
 Group: Qt/Qt
 URL: https://github.com/nicosouv/harbour-moji
-License: MIT (code) / Apache-2.0 (Tesseract and its language data)
+License: GPLv2+ (binary, via Poppler) / MIT (code) / Apache-2.0 (Tesseract and its language data)
 # This must be generated before uploading a package to a remote build service.
 # Usually this line does not need to be modified.
 Sources:
@@ -40,6 +40,10 @@ PkgConfigBR:
   - Qt5Quick
   - Qt5Concurrent
   - Qt5Sql
+  # Renders PDF pages. Not cross-compiled into 3rdparty/ the way Tesseract is,
+  # and it does not need to be: Sailfish ships poppler-qt5 as part of the
+  # platform because the system document viewer uses it.
+  - poppler-qt5
 
 PkgBR:
   - qt5-qttools-linguist
@@ -52,6 +56,9 @@ Requires:
   - sailfishsilica-qt5 >= 0.10.9
   # CameraPage.qml imports QtMultimedia for the viewfinder and the shutter.
   - qt5-qtdeclarative-import-multimedia
+  # Already present on every device, listed so the dependency is stated rather
+  # than assumed from the platform happening to carry it.
+  - poppler-qt5
 
 # All installed files
 #

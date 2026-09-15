@@ -128,6 +128,18 @@
         <source>Take a photo</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Choose a document</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>A PDF, or an image kept in Documents</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>This page already carries text. Reading it as a picture anyway.</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>OcrEngine</name>
@@ -422,6 +434,40 @@
     </message>
     <message>
         <source>Photo no longer on the device</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>PdfPagePage</name>
+    <message>
+        <source>Choose a page</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>%1 pages</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Pages</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Page %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>PdfRender</name>
+    <message>
+        <source>That page could not be rendered.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>That page is not in the document.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The rendered page could not be saved.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

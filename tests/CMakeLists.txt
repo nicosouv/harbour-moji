@@ -144,3 +144,15 @@ add_executable(tst_scenetext
 target_include_directories(tst_scenetext PRIVATE ${MOJI_SRC})
 target_link_libraries(tst_scenetext Qt5::Core Qt5::Gui Qt5::Test)
 add_test(NAME scenetext COMMAND tst_scenetext)
+
+# Choosing the resolution to rasterise a PDF page at. Invented from the page's
+# size in points, and quiet in both directions when wrong: too low reads as a bad
+# PDF, too high reads as a crash. The table case asserts the property that
+# actually protects the app - whatever page it is handed, the render fits.
+add_executable(tst_pdfpage
+    ${CMAKE_CURRENT_LIST_DIR}/tst_pdfpage.cpp
+    ${MOJI_SRC}/pdfpage.cpp
+)
+target_include_directories(tst_pdfpage PRIVATE ${MOJI_SRC})
+target_link_libraries(tst_pdfpage Qt5::Core Qt5::Gui Qt5::Test)
+add_test(NAME pdfpage COMMAND tst_pdfpage)
