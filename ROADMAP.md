@@ -175,6 +175,24 @@ under **Next**.
   — MIT is GPL-compatible, which is what makes the combination distributable — and
   the source offer the GPL asks for is this repository. See README.
 
+### The cover
+
+- **There wasn't one.** `qml/cover/` was an empty directory and `ApplicationWindow`
+  never set `cover:`, so the app showed Sailfish's default — the icon and the name
+  — which on this platform reads as unfinished.
+- **Three states, because the app has three.** Idle, reading, read. The one that
+  earns the file is *reading*: recognition takes a second or three on a photograph
+  and longer on a document, so somebody who minimised mid-read can see whether it
+  is still going, and which page of a PDF it reached.
+- **It will not put a private number on the home screen.** When the reading
+  contained an IBAN, a card number or a passport code it says so instead of
+  showing the text — the same `sensitiveCount` that decides whether the result
+  page offers to black them out. A cover is visible to anyone who glances at the
+  phone, which is a different audience from the person holding it.
+- **Camera and share**, which is the platform's maximum of two. The camera action
+  pushes rather than replacing the stack: tapping it over an open result has not
+  asked to lose that result.
+
 ### Not measurable from here
 
 - **The camera tags which way up it was.** Nothing set the capture orientation, so
