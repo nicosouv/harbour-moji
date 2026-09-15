@@ -1,4 +1,5 @@
 #include <QtTest>
+#include <QPainter>
 #include <QSet>
 #include <QLineF>
 #include <QTransform>
@@ -45,6 +46,13 @@ private slots:
     void toSourceRectUndoesTheScale();
     void toSourceRectKeepsTouchingBoxesTouching();
     void roundTripLandsWithinAPixel();
+
+    void flattenedSizeTakesTheLongerEdges();
+    void quadIsRefusedWhenItIsNotOne();
+    void flatteningARectangleChangesNothingMuch();
+    void flatteningPullsATrapezoidStraight();
+    void flatteningRefusesRubbish();
+
 
     void inkFractionCountsTheBlack();
     void binarisingHelpsAPage();
@@ -442,6 +450,123 @@ void TestImagePrep::binarisedLeavesOtherFormatsAlone()
     // untouched rather than produce nonsense.
     const QImage colour = photo(50, 50);
     QCOMPARE(binarised(colour).format(), colour.format());
+}
+
+namespace {
+
+QPolygonF quad(const QPointF &tl, const QPointF &tr,
+               const QPointF &br, const QPointF &bl)
+{
+    QPolygonF p;
+    p << tl << tr << br << bl;
+    return p;
+}
+
+} // namespace
+
+void TestImagePrep::flattenedSizeTakesTheLongerEdges()
+{
+    // A page leaning away from the camera: the top edge is shorter than the
+    // bottom. The result must be as wide as the *near* edge, which is the one
+    // that was photographed at full resolution - sizing to the far edge throws
+    // away detail that exists.
+    const QPolygonF page = quad(QPointF(20, 0), QPointF(80, 0),
+                                QPointF(100, 100), QPointF(0, 100));
+
+    const QSize size = flattenedSize(page);
+    QCOMPARE(size.width(), 100);   // the bottom edge, not the top's 60
+    QVERIFY(size.height() >= 100);
+}
+
+void TestImagePrep::quadIsRefusedWhenItIsNotOne()
+{
+    const QSize bounds(200, 200);
+
+    // Too few points.
+    QPolygonF three;
+    three << QPointF(0, 0) << QPointF(10, 0) << QPointF(10, 10);
+    QVERIFY(!isUsableQuad(three, bounds));
+
+    // Two corners in the same place: quadToQuad has no answer for that.
+    QVERIFY(!isUsableQuad(quad(QPointF(0, 0), QPointF(0, 0),
+                               QPointF(100, 100), QPointF(0, 100)), bounds));
+
+    // A sliver. Flattening this asks for an image three pixels tall.
+    QVERIFY(!isUsableQuad(quad(QPointF(0, 0), QPointF(180, 0),
+                               QPointF(180, 3), QPointF(0, 3)), bounds));
+
+    // Off the edge of the photograph.
+    QVERIFY(!isUsableQuad(quad(QPointF(-40, 0), QPointF(180, 0),
+                               QPointF(180, 180), QPointF(0, 180)), bounds));
+
+    // And one that is fine.
+    QVERIFY(isUsableQuad(quad(QPointF(10, 10), QPointF(190, 20),
+                              QPointF(180, 190), QPointF(0, 180)), bounds));
+}
+
+void TestImagePrep::flatteningARectangleChangesNothingMuch()
+{
+    // The identity case. A quad that is already the whole rectangle must come
+    // back as the same picture - if this drifts, every other case is drifting
+    // too and no test would say so.
+    QImage source(60, 40, QImage::Format_Grayscale8);
+    source.fill(255);
+    for (int x = 10; x < 50; ++x) {
+        source.scanLine(20)[x] = 0;
+    }
+
+    const QImage out = flattened(source, quad(QPointF(0, 0), QPointF(60, 0),
+                                              QPointF(60, 40), QPointF(0, 40)));
+    QVERIFY(!out.isNull());
+    QCOMPARE(out.format(), QImage::Format_Grayscale8);
+    QCOMPARE(out.size(), QSize(60, 40));
+
+    // The dark line is still dark, and still across the middle.
+    QVERIFY(out.constScanLine(20)[30] < 128);
+    QVERIFY(out.constScanLine(5)[30] > 128);
+}
+
+void TestImagePrep::flatteningPullsATrapezoidStraight()
+{
+    // A black bar drawn inside a trapezoid. After flattening, the bar should run
+    // the full width of the result - which is the whole point: the converging
+    // edges of a page photographed at an angle become parallel again.
+    QImage source(200, 200, QImage::Format_Grayscale8);
+    source.fill(255);
+
+    // The page: narrow at the top, wide at the bottom.
+    const QPolygonF page = quad(QPointF(60, 20), QPointF(140, 20),
+                                QPointF(190, 180), QPointF(10, 180));
+
+    // Fill the quad black so there is something with the quad's own shape.
+    QPainter painter(&source);
+    painter.setBrush(Qt::black);
+    painter.setPen(Qt::NoPen);
+    painter.drawPolygon(page);
+    painter.end();
+
+    const QImage out = flattened(source, page);
+    QVERIFY(!out.isNull());
+
+    // The whole result should now be the page, corner to corner - a trapezoid
+    // pulled to a rectangle leaves no white wedges at the sides.
+    const int inset = 4;
+    QVERIFY(out.constScanLine(inset)[inset] < 128);
+    QVERIFY(out.constScanLine(inset)[out.width() - 1 - inset] < 128);
+    QVERIFY(out.constScanLine(out.height() - 1 - inset)[inset] < 128);
+    QVERIFY(out.constScanLine(out.height() - 1 - inset)[out.width() - 1 - inset] < 128);
+}
+
+void TestImagePrep::flatteningRefusesRubbish()
+{
+    QImage source(100, 100, QImage::Format_Grayscale8);
+    source.fill(255);
+
+    QVERIFY(flattened(QImage(), quad(QPointF(0, 0), QPointF(10, 0),
+                                     QPointF(10, 10), QPointF(0, 10))).isNull());
+    QVERIFY(flattened(source, QPolygonF()).isNull());
+    QVERIFY(flattened(source, quad(QPointF(0, 0), QPointF(0, 0),
+                                   QPointF(0, 0), QPointF(0, 0))).isNull());
 }
 
 void TestImagePrep::inkFractionCountsTheBlack()

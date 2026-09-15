@@ -3,6 +3,7 @@
 
 #include <QImage>
 #include <QLineF>
+#include <QPolygonF>
 #include <QRect>
 #include <QString>
 #include <QTransform>
@@ -143,6 +144,39 @@ const qreal MaxInk = 0.35;
 // user; it has to be decided from the image. inkFraction measures exactly the
 // thing that goes wrong, so that is what decides it.
 QImage binarisedIfItHelps(const QImage &grey);
+
+// The four corners of a page, pulled flat into a rectangle.
+//
+// This is the one distortion nothing else here can touch. `skewAngle` measures
+// how far the text is rotated *in the plane of the photograph* and straightens
+// that; a page held at an angle to the camera is a different problem - the far
+// edge is shorter than the near one, the lines converge, and no rotation fixes a
+// trapezoid. Tesseract is trained on flatbed scans, where that never happens, and
+// a keystoned page is close to its worst case.
+//
+// Done with QTransform::quadToQuad, which is plain Qt: the projective transform
+// that takes four points to four other points. No OpenCV, so this stays in the
+// layer tests/ can reach. Borrowed, with thanks, from Textractor
+// (github.com/smatkovi/Textractor, MIT), which solves it the same way.
+//
+// `corners` is four points in the source image's coordinates, clockwise from the
+// top left. Returns a null image if they do not describe a usable quadrilateral.
+QImage flattened(const QImage &image, const QPolygonF &corners);
+
+// How large the flattened page should be, from the quad's own edges.
+//
+// The widest of the two horizontal edges and the tallest of the two vertical
+// ones, so nothing is squeezed: the near edge of a tilted page is the one that
+// was photographed at full resolution, and sizing to the far edge would throw
+// that away.
+QSize flattenedSize(const QPolygonF &corners);
+
+// Whether four points describe a quadrilateral worth transforming.
+//
+// Guards the degenerate cases that make quadToQuad fail or produce something
+// enormous: fewer than four points, points that coincide, and a quad so thin it
+// is a line.
+bool isUsableQuad(const QPolygonF &corners, const QSize &bounds);
 
 // Greyscale, no larger than maxEdge on its long side.
 //

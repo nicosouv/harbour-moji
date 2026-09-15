@@ -1,6 +1,7 @@
 #include "imageprep.h"
 
 #include <QImageReader>
+#include <QPainter>
 #include <QTransform>
 
 #include <algorithm>
@@ -141,6 +142,107 @@ QImage binarisedIfItHelps(const QImage &grey)
         return grey;
     }
     return bw;
+}
+
+namespace {
+
+// The longer of two edges, which is the one photographed closest to the camera
+// and therefore the one with the detail in it.
+qreal longerEdge(const QPointF &a1, const QPointF &a2,
+                 const QPointF &b1, const QPointF &b2)
+{
+    return qMax(QLineF(a1, a2).length(), QLineF(b1, b2).length());
+}
+
+} // namespace
+
+QSize flattenedSize(const QPolygonF &corners)
+{
+    if (corners.size() < 4) {
+        return QSize();
+    }
+
+    const QPointF tl = corners.at(0);
+    const QPointF tr = corners.at(1);
+    const QPointF br = corners.at(2);
+    const QPointF bl = corners.at(3);
+
+    const qreal width = longerEdge(tl, tr, bl, br);
+    const qreal height = longerEdge(tl, bl, tr, br);
+
+    return QSize(qRound(width), qRound(height));
+}
+
+bool isUsableQuad(const QPolygonF &corners, const QSize &bounds)
+{
+    if (corners.size() < 4) {
+        return false;
+    }
+
+    // Every corner inside the photograph, with a pixel of slack for a fingertip
+    // that landed exactly on the edge.
+    const QRectF frame(-1, -1, bounds.width() + 2, bounds.height() + 2);
+    for (const QPointF &corner : corners) {
+        if (!frame.contains(corner)) {
+            return false;
+        }
+    }
+
+    // Two corners in the same place make the transform singular, and quadToQuad
+    // either refuses or returns something unusable.
+    for (int i = 0; i < 4; ++i) {
+        for (int j = i + 1; j < 4; ++j) {
+            if (QLineF(corners.at(i), corners.at(j)).length() < 2.0) {
+                return false;
+            }
+        }
+    }
+
+    // A quad thinner than this is a line, and flattening it would ask for an
+    // image a few pixels tall and thousands wide.
+    const QSize size = flattenedSize(corners);
+    return size.width() >= 16 && size.height() >= 16;
+}
+
+QImage flattened(const QImage &image, const QPolygonF &corners)
+{
+    if (image.isNull() || !isUsableQuad(corners, image.size())) {
+        return QImage();
+    }
+
+    const QSize target = flattenedSize(corners);
+
+    QPolygonF to;
+    to << QPointF(0, 0)
+       << QPointF(target.width(), 0)
+       << QPointF(target.width(), target.height())
+       << QPointF(0, target.height());
+
+    QTransform transform;
+    if (!QTransform::quadToQuad(corners, to, transform)) {
+        return QImage();
+    }
+
+    // Painted rather than QImage::transformed, because transformed() decides the
+    // result's size for itself and translates it to the origin - which is fine
+    // for a quarter turn and useless here, where the whole point is to land on a
+    // rectangle of a size we chose.
+    //
+    // ARGB32 for the painting and greyscale afterwards, for the reason the quarter
+    // turns already taught: QPainter has no guaranteed path onto Format_Grayscale8
+    // on the Qt this ships against, and a surface it cannot paint gives a blank
+    // image rather than an error.
+    QImage canvas(target, QImage::Format_ARGB32_Premultiplied);
+    canvas.fill(Qt::white);
+
+    QPainter painter(&canvas);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setTransform(transform);
+    painter.drawImage(0, 0, image);
+    painter.end();
+
+    return canvas.convertToFormat(QImage::Format_Grayscale8);
 }
 
 qreal skewAngle(const QVector<QLineF> &baselines)
