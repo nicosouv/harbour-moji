@@ -120,8 +120,15 @@ docker run --rm -v "$PWD:/src:ro" -w /work ubuntu:24.04 bash -c '
   python3 scripts/check_qt56.py
   bash tests/syntax-check.sh
   cmake -S tests -B build-tests -G Ninja && cmake --build build-tests
-  QT_QPA_PLATFORM=offscreen ctest --test-dir build-tests --output-on-failure'
+  QT_QPA_PLATFORM=offscreen ctest --test-dir build-tests --output-on-failure
+  cmake -S . -B build-app -G Ninja && cmake --build build-app'
 ```
+
+The last line links the whole app. It matters more than it looks: `syntax-check.sh`
+compiles each file on its own and never links, so a function that is declared and
+called but whose body has gone passes everything else and fails at `ld` in the RPM
+build — on a tag, once the version number is already spent. That is how v0.1.18
+was lost.
 
 ### Measuring recognition against real photographs
 

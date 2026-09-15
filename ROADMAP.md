@@ -268,5 +268,6 @@ one is now caught in CI rather than on a phone:
 | `QDateTime::currentSecsSinceEpoch`, added in Qt 5.8 | `check_qt56.py` holds the list of APIs newer than 5.6 |
 | A `tr()` filed under the wrong context | `check_translations.py` anchors C++ contexts to column zero |
 | Two items sizing each other across the two dimensions | `check_qml.py` follows the size bindings between ids and refuses a cycle |
+| A function declared and called with its body deleted | the CI `link` lane builds and links the whole app, which `-fsyntax-only` never did |
 
 The list grows rather than shrinks.

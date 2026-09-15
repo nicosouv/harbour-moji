@@ -43,6 +43,8 @@ tests/fixtures/*.pdf
 
 # Build directories
 build/
+build-app/
+build-tests/
 .obj/
 .moc/
 .ui/

@@ -52,10 +52,40 @@ jobs:
       - name: Run tests
         run: QT_QPA_PLATFORM=offscreen ctest --test-dir build-tests --output-on-failure
 
+  # Links the whole app, which the syntax lane below deliberately does not.
+  #
+  # -fsyntax-only compiles each file alone and never links them, so a function
+  # that is declared and called but whose body has been deleted passes every
+  # other check here and fails at ld inside the RPM build - on a tag, after the
+  # version number is spent. That is exactly how v0.1.18 was lost:
+  # sensitiveBoxes() went out with the CSV export it had nothing to do with.
+  #
+  # Every dependency the CMakeLists wants is packaged for Ubuntu, so this is one
+  # container and a real binary at the end of it. Not the cross-compile - that is
+  # still the SDK's job on a tag - but every symbol has to resolve.
+  link:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+
+      - name: Install the app's dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            qtbase5-dev qtdeclarative5-dev libqt5sql5-sqlite \
+            cmake ninja-build g++ pkg-config qttools5-dev-tools \
+            libtesseract-dev libleptonica-dev libpoppler-qt5-dev
+
+      - name: Configure and link
+        run: |
+          cmake -S . -B build-app -G Ninja
+          cmake --build build-app
+          test -x build-app/harbour-moji
+
   # The unit tests cover the pure layers only, which means nothing above ever
-  # compiles main, the settings or the engine. This does.
-  # Without it, a typo there would first be seen by a tag's RPM build - after
-  # the version number has already been spent.
+  # compiles main, the settings or the engine. This does - though only one file
+  # at a time, which is why the link lane above exists as well.
   syntax:
     runs-on: ubuntu-latest
     steps:

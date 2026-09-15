@@ -122,6 +122,20 @@ slogan — as a build rule:
   changed from raw pointers to `std::unique_ptr` around 22.x, and `pdfrender.cpp`
   has a two-overload `adopt()` so either spelling compiles. Both ends happen to be
   new enough today; the day Jolla pins an older one is not the day to find out.
+- **`-fsyntax-only` does not link, so a missing definition reaches the tag.**
+  `tests/syntax-check.sh` compiles each file on its own and never links them
+  together, so a function that is declared and called but whose *body* has been
+  deleted passes every off-device check and fails at `ld` inside the RPM build -
+  which is to say, on a tag, after the version number is spent.
+  It happened deleting the CSV export: `tables()`, an anonymous-namespace helper
+  and `sensitiveBoxes()` sat in one run of the file, cutting from the first
+  function's opening brace to the next declaration took all three, and only the
+  two that were *referenced from the same translation unit* showed up as compile
+  errors. `sensitiveBoxes()` is called from `exportRedacted()`, resolved fine at
+  compile time from its declaration in the header, and vanished at link time.
+  The lane now links the whole app - every dependency the CMakeLists wants is
+  packaged for Ubuntu, so this costs one more container step and closes the class.
+  When deleting a function, delete it by name, and never by cutting a span.
 - **Every off-device lane compiles against a newer Qt than the device has.**
   Ubuntu has 5.15, Sailfish has 5.6, so a call added in 5.8 passes
   `tests/syntax-check.sh` and fails inside the RPM build on a tag.
