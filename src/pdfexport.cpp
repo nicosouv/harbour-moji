@@ -3,6 +3,8 @@
 #include <QFont>
 #include <QPainter>
 #include <QPdfWriter>
+#include <QTextDocument>
+#include <QAbstractTextDocumentLayout>
 
 #include "logging.h"
 
@@ -27,28 +29,7 @@ QPointF originFor(const QSize &imageSize, const QSizeF &pageSize)
                    (pageSize.height() - imageSize.height() * scale) / 2.0);
 }
 
-qreal fontSizeForBox(const QRect &box, qreal scale)
-{
-    // The cap height of a typeface is about 70% of its point size, and a word box
-    // encloses roughly the cap height plus descenders. Sizing the font to the box
-    // height directly makes the invisible text noticeably taller than the word,
-    // and a reader's selection then spills into the lines around it.
-    const qreal height = box.height() * scale * 0.8;
-    // qreal is float on armv7hl and double on aarch64, so a bare
-    // 1.0 here is a different type on each and qMax refuses to
-    // deduce one. Naming the type builds on both.
-    return qMax<qreal>(1.0, height);
-}
-
-QPointF baselineFor(const QRect &box, qreal scale, const QPointF &origin)
-{
-    // Four fifths down the box: descenders live below the baseline, so the bottom
-    // edge is not it.
-    return QPointF(origin.x() + box.x() * scale,
-                   origin.y() + (box.y() + box.height() * 0.8) * scale);
-}
-
-bool write(const QString &path, const QImage &photo, const OcrResult &result)
+bool write(const QString &path, const QImage &photo, const QString &text)
 {
     if (photo.isNull()) {
         return false;
@@ -68,31 +49,55 @@ bool write(const QString &path, const QImage &photo, const OcrResult &result)
     }
 
     const QSizeF pageSize(PageWidth, PageHeight);
+
+    // Page one: the photograph, as large as it goes.
     const qreal scale = scaleFor(photo.size(), pageSize);
     const QPointF origin = originFor(photo.size(), pageSize);
-
     painter.drawImage(QRectF(origin.x(), origin.y(),
                              photo.width() * scale, photo.height() * scale),
                       photo);
 
-    // Transparent, not white and not zero-opacity: the text still goes into the
-    // content stream as text, so a reader finds and selects it, but it paints
-    // nothing at all over the photograph.
-    painter.setPen(Qt::transparent);
+    if (!text.trimmed().isEmpty()) {
+        // The text, flowed over as many pages as it takes.
+        //
+        // Laid out by QTextDocument rather than by drawing lines one at a time:
+        // a page of recognised text wraps, and working out where to break it by
+        // hand is how the last line of every page ends up half drawn over the
+        // first line of the next.
+        QTextDocument document;
+        document.setDefaultFont(QFont(QStringLiteral("Sans"), 10));
+        document.setPlainText(text);
 
-    QFont font = painter.font();
-    for (const OcrWord &word : result.words()) {
-        if (word.text.isEmpty() || word.box.isEmpty()) {
-            continue;
+        const qreal textWidth = pageSize.width() - 2 * Margin;
+        const qreal textHeight = pageSize.height() - 2 * Margin;
+        document.setPageSize(QSizeF(textWidth, textHeight));
+
+        const int pages = document.pageCount();
+        for (int i = 0; i < pages; ++i) {
+            writer.newPage();
+
+            painter.save();
+            painter.translate(Margin, Margin);
+
+            // The window is this page's slice of the document; everything outside
+            // it is clipped, which is what stops the neighbouring pages' lines
+            // bleeding into this one.
+            const QRectF window(0, i * textHeight, textWidth, textHeight);
+            painter.setClipRect(0, 0, textWidth, textHeight);
+            painter.translate(0, -window.top());
+
+            QAbstractTextDocumentLayout::PaintContext context;
+            context.clip = window;
+            context.palette.setColor(QPalette::Text, Qt::black);
+            document.documentLayout()->draw(&painter, context);
+
+            painter.restore();
         }
-        font.setPointSizeF(fontSizeForBox(word.box, scale));
-        painter.setFont(font);
-        painter.drawText(baselineFor(word.box, scale, origin), word.text);
     }
 
     painter.end();
-    qCDebug(lcMoji) << "wrote a searchable PDF with" << result.count()
-                    << "words to" << path;
+    qCDebug(lcMoji) << "wrote a PDF with the photo and"
+                    << text.length() << "characters of text to" << path;
     return true;
 }
 

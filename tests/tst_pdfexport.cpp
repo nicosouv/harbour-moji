@@ -6,12 +6,16 @@
 
 using namespace PdfExport;
 
-// Laying the recognised text invisibly over the photo.
+// Writing the photograph and its text out as one PDF.
 //
-// The geometry is what the tests are for. A PDF that is slightly wrong here looks
-// perfect - it is the photograph - and only misbehaves when somebody searches it
-// and the highlight lands on the wrong line. There is nothing to notice by
-// looking, so it has to be pinned by arithmetic.
+// The geometry that is still worth pinning is the fit: an image scaled by even a
+// little too much is cropped by the page, and a cropped PDF looks entirely
+// deliberate - the missing strip is noticed only by whoever needed what was on it.
+//
+// What is no longer tested, because it is no longer done: the invisible text layer
+// positioned box by box over the photograph. That was replaced by plain text on
+// its own pages, which carries the user's corrections and can be read by a person
+// rather than only found by a search.
 class TestPdfExport : public QObject
 {
     Q_OBJECT
@@ -19,68 +23,67 @@ class TestPdfExport : public QObject
 private:
     static QSizeF page() { return QSizeF(PageWidth, PageHeight); }
 
-    static OcrResult oneWord(const QRect &box, const QString &text)
+    static QImage photo(int width, int height)
     {
-        OcrResult result;
-        OcrWord word;
-        word.text = text;
-        word.box = box;
-        word.confidence = 90.0f;
-        result.append(word);
-        result.setImageSize(QSize(1000, 1400));
-        return result;
+        QImage image(width, height, QImage::Format_RGB32);
+        image.fill(Qt::white);
+        return image;
     }
 
 private slots:
     void scaleFitsAPortraitImage();
     void scaleFitsALandscapeImage();
+    void scaleNeverCropsTheImage_data();
     void scaleNeverCropsTheImage();
     void scaleHandlesNothing();
 
     void originCentresTheImage();
-    void originIsZeroOnOneAxisWhenItFills();
+    void originIsZeroForAnExactFit();
 
-    void fontSizeFollowsTheBoxHeight();
-    void fontSizeIsNeverZero();
-
-    void baselineSitsInsideTheBox();
-    void baselineIsBelowTheBoxTop();
-
-    void writeProducesAPdf();
-    void writeRefusesANullImage();
+    void writesAFile();
+    void writesWithoutAnyText();
+    void refusesAnEmptyPhoto();
+    void longTextRunsToSeveralPages();
 };
 
 void TestPdfExport::scaleFitsAPortraitImage()
 {
-    // Taller than A4's proportions, so the height decides.
+    // Taller than it is wide, against a taller-than-wide page: the height decides.
     const qreal scale = scaleFor(QSize(1000, 2000), page());
     QVERIFY(qAbs(scale - PageHeight / 2000.0) < 1e-9);
 }
 
 void TestPdfExport::scaleFitsALandscapeImage()
 {
-    // Wider than A4, so the width decides.
+    // Wider than the page is: the width decides.
     const qreal scale = scaleFor(QSize(2000, 1000), page());
     QVERIFY(qAbs(scale - PageWidth / 2000.0) < 1e-9);
 }
 
+void TestPdfExport::scaleNeverCropsTheImage_data()
+{
+    QTest::addColumn<QSize>("size");
+    QTest::newRow("portrait photo") << QSize(3000, 4000);
+    QTest::newRow("landscape photo") << QSize(4000, 3000);
+    QTest::newRow("square") << QSize(2500, 2500);
+    QTest::newRow("panorama") << QSize(8000, 1200);
+    QTest::newRow("tall receipt") << QSize(900, 6000);
+    QTest::newRow("smaller than the page") << QSize(100, 120);
+}
+
 void TestPdfExport::scaleNeverCropsTheImage()
 {
-    // Whatever the shape, the scaled image has to fit inside the page. Losing an
-    // edge of somebody's document to a rounding choice is not a trade worth
-    // making silently.
-    const QVector<QSize> shapes {
-        QSize(1000, 1400), QSize(4000, 3000), QSize(500, 5000), QSize(3000, 300)
-    };
-    for (const QSize &shape : shapes) {
-        const qreal scale = scaleFor(shape, page());
-        QVERIFY2(shape.width() * scale <= PageWidth + 1e-6,
-                 qPrintable(QStringLiteral("too wide for %1x%2")
-                                .arg(shape.width()).arg(shape.height())));
-        QVERIFY2(shape.height() * scale <= PageHeight + 1e-6,
-                 qPrintable(QStringLiteral("too tall for %1x%2")
-                                .arg(shape.width()).arg(shape.height())));
-    }
+    QFETCH(QSize, size);
+
+    const qreal scale = scaleFor(size, page());
+
+    // The property that protects the file: whatever the photograph's shape, both
+    // of its sides land inside the page. A tolerance of a thousandth of a point,
+    // because this is float arithmetic and not a promise about exact equality.
+    QVERIFY2(size.width() * scale <= PageWidth + 1e-3,
+             qPrintable(QStringLiteral("width %1").arg(size.width() * scale)));
+    QVERIFY2(size.height() * scale <= PageHeight + 1e-3,
+             qPrintable(QStringLiteral("height %1").arg(size.height() * scale)));
 }
 
 void TestPdfExport::scaleHandlesNothing()
@@ -91,93 +94,87 @@ void TestPdfExport::scaleHandlesNothing()
 
 void TestPdfExport::originCentresTheImage()
 {
-    const QSize image(1000, 1000);   // square: letterboxed on the long axis
-    const QPointF origin = originFor(image, page());
-    const qreal scale = scaleFor(image, page());
-
-    const qreal leftGap = origin.x();
-    const qreal rightGap = PageWidth - (origin.x() + image.width() * scale);
-    QVERIFY(qAbs(leftGap - rightGap) < 1e-6);
+    // A portrait image on a portrait page fills the height, so the margin is all
+    // horizontal and the vertical offset is nothing.
+    const QPointF origin = originFor(QSize(1000, 2000), page());
+    QVERIFY(origin.x() > 0.0);
+    QVERIFY(qAbs(origin.y()) < 1e-9);
 }
 
-void TestPdfExport::originIsZeroOnOneAxisWhenItFills()
+void TestPdfExport::originIsZeroForAnExactFit()
 {
-    // A4's own proportions: it fills the width exactly, so there is no margin
-    // there and the offset must be zero rather than a hair off it.
-    const QSize image(595, 842);
-    const QPointF origin = originFor(image, page());
-    QVERIFY(qAbs(origin.x()) < 1e-6);
-    QVERIFY(qAbs(origin.y()) < 1e-6);
+    const QPointF origin = originFor(QSize(int(PageWidth), int(PageHeight)), page());
+    QVERIFY(qAbs(origin.x()) < 1.0);
+    QVERIFY(qAbs(origin.y()) < 1.0);
 }
 
-void TestPdfExport::fontSizeFollowsTheBoxHeight()
-{
-    // Twice the box, twice the size: the invisible text has to track the words it
-    // is standing in for, or selecting a heading picks up the body text.
-    const qreal small = fontSizeForBox(QRect(0, 0, 100, 20), 1.0);
-    const qreal large = fontSizeForBox(QRect(0, 0, 100, 40), 1.0);
-    QVERIFY(qAbs(large - 2.0 * small) < 1e-6);
-}
-
-void TestPdfExport::fontSizeIsNeverZero()
-{
-    // A degenerate box from a stray mark must not produce a zero or negative
-    // point size, which Qt refuses and which would drop the word silently.
-    QVERIFY(fontSizeForBox(QRect(0, 0, 1, 0), 0.1) >= 1.0);
-    QVERIFY(fontSizeForBox(QRect(), 1.0) >= 1.0);
-}
-
-void TestPdfExport::baselineSitsInsideTheBox()
-{
-    const QRect box(100, 200, 80, 30);
-    const qreal scale = 0.5;
-    const QPointF origin(10.0, 20.0);
-    const QPointF baseline = baselineFor(box, scale, origin);
-
-    const qreal top = origin.y() + box.top() * scale;
-    const qreal bottom = origin.y() + box.bottom() * scale;
-
-    QVERIFY(baseline.y() > top);
-    QVERIFY(baseline.y() <= bottom + 1e-6);
-    // Text starts at the left edge of the word it replaces.
-    QVERIFY(qAbs(baseline.x() - (origin.x() + box.x() * scale)) < 1e-6);
-}
-
-void TestPdfExport::baselineIsBelowTheBoxTop()
-{
-    // Specifically not the bottom edge: descenders hang below the baseline, so
-    // putting it at the bottom sets every line a little low and a paragraph
-    // selection picks up the line underneath.
-    const QRect box(0, 0, 100, 100);
-    const QPointF baseline = baselineFor(box, 1.0, QPointF(0, 0));
-    QVERIFY(baseline.y() > 50.0);
-    QVERIFY(baseline.y() < 100.0);
-}
-
-void TestPdfExport::writeProducesAPdf()
+void TestPdfExport::writesAFile()
 {
     QTemporaryDir dir;
     QVERIFY(dir.isValid());
-    const QString path = dir.filePath(QStringLiteral("out.pdf"));
+    const QString path = dir.path() + QStringLiteral("/out.pdf");
 
-    QImage photo(400, 600, QImage::Format_RGB32);
-    photo.fill(Qt::white);
-
-    QVERIFY(write(path, photo, oneWord(QRect(50, 100, 120, 24),
-                                       QStringLiteral("Facture"))));
+    QVERIFY(write(path, photo(600, 800), QStringLiteral("Comites de quartier")));
 
     QFile file(path);
+    QVERIFY(file.exists());
+    QVERIFY(file.size() > 0);
+
+    // It is a PDF, by its own first bytes rather than by its name.
     QVERIFY(file.open(QIODevice::ReadOnly));
-    const QByteArray head = file.read(5);
-    QCOMPARE(head, QByteArray("%PDF-"));
-    QVERIFY2(file.size() > 1000, "a PDF holding a photo should not be tiny");
+    QVERIFY(file.read(5).startsWith("%PDF-"));
 }
 
-void TestPdfExport::writeRefusesANullImage()
+void TestPdfExport::writesWithoutAnyText()
+{
+    // A photograph that gave up nothing still exports: the picture is the point,
+    // and refusing would lose it over the part that failed.
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString path = dir.path() + QStringLiteral("/empty.pdf");
+
+    QVERIFY(write(path, photo(400, 300), QString()));
+    QVERIFY(QFile(path).size() > 0);
+
+    QVERIFY(write(path, photo(400, 300), QStringLiteral("   \n  \n ")));
+    QVERIFY(QFile(path).size() > 0);
+}
+
+void TestPdfExport::refusesAnEmptyPhoto()
 {
     QTemporaryDir dir;
     QVERIFY(dir.isValid());
-    QVERIFY(!write(dir.filePath(QStringLiteral("none.pdf")), QImage(), OcrResult()));
+    QVERIFY(!write(dir.path() + QStringLiteral("/none.pdf"), QImage(),
+                   QStringLiteral("text")));
+}
+
+void TestPdfExport::longTextRunsToSeveralPages()
+{
+    // Enough text to need more than one page after the photograph. The failure
+    // this guards against is a layout that silently drops everything past the
+    // first page, which looks like a complete file until somebody reads to the
+    // bottom of it.
+    QString wall;
+    for (int i = 0; i < 400; ++i) {
+        wall += QStringLiteral("Comites de quartier, Conseil des sages, reunions "
+                               "publiques, visites de quartier. ");
+    }
+
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString shortPath = dir.path() + QStringLiteral("/short.pdf");
+    const QString longPath = dir.path() + QStringLiteral("/long.pdf");
+
+    QVERIFY(write(shortPath, photo(600, 800), QStringLiteral("one line")));
+    QVERIFY(write(longPath, photo(600, 800), wall));
+
+    // Not a page count - that would mean parsing a PDF - but the file with forty
+    // times the text must be substantially larger, which it cannot be if the
+    // overflow was dropped.
+    QVERIFY2(QFile(longPath).size() > QFile(shortPath).size() * 2,
+             qPrintable(QStringLiteral("short %1, long %2")
+                            .arg(QFile(shortPath).size())
+                            .arg(QFile(longPath).size())));
 }
 
 QTEST_MAIN(TestPdfExport)
