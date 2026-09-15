@@ -59,7 +59,6 @@ set(CORE_SOURCES
     src/textlayout.cpp
     src/fieldparser.cpp
     src/imageprep.cpp
-    src/tableextract.cpp
     src/languagenames.cpp
     src/scenetext.cpp
     src/pdfpage.cpp
@@ -70,7 +69,6 @@ set(CORE_HEADERS
     src/textlayout.h
     src/fieldparser.h
     src/imageprep.h
-    src/tableextract.h
     src/languagenames.h
     src/scenetext.h
     src/pdfpage.h

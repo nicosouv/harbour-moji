@@ -17,6 +17,16 @@ Page {
 
     property url imageUrl
 
+    // Set when this page is one page of a PDF, so the next one is a tap away
+    // instead of a walk back to the main page and through the picker again -
+    // which is what reading a two-page document used to cost.
+    property url documentUrl
+    property int documentPage: 0
+    property int documentPages: 0
+
+    readonly property bool hasNextPage:
+        documentPages > 1 && documentPage < documentPages
+
     // Set when the page is opened from the history: the text was kept, so showing
     // it costs nothing while recognising the photo again costs seconds and can
     // come out differently. The photo is still shown, and "Read again" is there
@@ -108,6 +118,14 @@ Page {
         } else if (id === "copy") {
             Clipboard.text = page.showingStored ? page.storedText : ocr.editedText
             banner.show(qsTr("All text copied"))
+        } else if (id === "share") {
+            // The reason most people photograph a page is to send what is on it
+            // somewhere else, and until now the only way out was the clipboard
+            // and another app. The Sharing permission has been in the sandbox
+            // since the first release with nothing asking for it.
+            page.shareText(page.showingStored ? page.storedText : ocr.editedText)
+        } else if (id === "nextpage") {
+            page.readNextPage()
         } else if (id === "again") {
             page.readWhole()
         } else if (id === "hide") {
@@ -119,19 +137,67 @@ Page {
             } else {
                 banner.show(qsTr("Could not save the copy"))
             }
-        } else if (id === "csv") {
-            // The first table found. A page with two is rare enough that picking
-            // between them can wait until someone meets one.
-            var block = ocr.tables[0].block
-            var base = page.imageUrl.toString().split("/").pop()
-                           .replace(/\.[^.]+$/, "") + ".csv"
-            var where = StandardPaths.download + "/" + base
-            if (ocr.exportCsv(where.replace("file://", ""), block)) {
-                banner.show(qsTr("Saved to Downloads as %1").arg(base))
-            } else {
-                banner.show(qsTr("Could not save the table"))
-            }
         }
+    }
+
+    // The next page of the same document, in place of this one.
+    //
+    // Replaced rather than pushed: a forty-page document would otherwise leave
+    // forty result pages on the stack, each holding a photograph.
+    function readNextPage() {
+        var next = page.documentPage + 1
+        var rendered = pdf.renderPage(page.documentUrl, next)
+        if (rendered == "") {
+            banner.show(pdf.lastError())
+            return
+        }
+
+        pageStack.completeAnimation()
+        pageStack.replace(Qt.resolvedUrl("ResultPage.qml"),
+                          { imageUrl: rendered,
+                            documentUrl: page.documentUrl,
+                            documentPage: next,
+                            documentPages: page.documentPages })
+    }
+
+    // Hands the text to whatever the user has installed that accepts text.
+    //
+    // Built here rather than with a ShareAction declared in the page, because the
+    // text is not known until the moment the verb is used and a declarative
+    // action would have to be rebuilt anyway.
+    function shareText(text) {
+        if (text === "") {
+            banner.show(qsTr("There is no text to share"))
+            return
+        }
+
+        // Built from a string at the moment it is used, rather than imported at
+        // the top of the file.
+        //
+        // An import names a module the device may not have, and a QML file that
+        // imports something missing does not lose that feature - the whole file
+        // fails to load and the page comes up blank, with the reason in the
+        // journal. That has cost this project a release once already
+        // (Image.autoTransform under the wrong QtQuick), so a component that is
+        // not certain to exist is built where a failure can be caught and said
+        // out loud.
+        var action = null
+        try {
+            action = Qt.createQmlObject(
+                'import QtQuick 2.0; import Sailfish.Share 1.0; ShareAction { }',
+                page, "shareAction")
+        } catch (e) {
+            action = null
+        }
+
+        if (action === null) {
+            banner.show(qsTr("Sharing is not available on this device"))
+            return
+        }
+
+        action.resources = [ { "type": "text/plain", "data": text } ]
+        action.trigger()
+        action.destroy()
     }
 
     function editWord(index, current) {
@@ -233,11 +299,15 @@ Page {
                 title: qsTr("Text")
                 description: ocr.busy
                              ? qsTr("Reading…")
-                             : (ocr.wordCount > 0
-                                ? qsTr("%1 words").arg(ocr.wordCount)
-                                : (page.showingStored
-                                   ? qsTr("Read earlier")
-                                   : ocr.lastError))
+                             : (page.documentPages > 1
+                                ? qsTr("Page %1 of %2 — %3 words")
+                                  .arg(page.documentPage).arg(page.documentPages)
+                                  .arg(ocr.wordCount)
+                                : (ocr.wordCount > 0
+                                   ? qsTr("%1 words").arg(ocr.wordCount)
+                                   : (page.showingStored
+                                      ? qsTr("Read earlier")
+                                      : ocr.lastError)))
             }
 
             // The language belongs here, not only in Settings: it is the biggest
@@ -627,20 +697,21 @@ Page {
                     property var verbs: [
                         { glyph: "\u2b1a", name: qsTr("Read only an area"), id: "area" },
                         { glyph: "\u21bb", name: qsTr("Rotate the view"),   id: "rotate" },
-                        { glyph: "\u21e9", name: qsTr("Save as searchable PDF"), id: "pdf" },
+                        { glyph: "\u21e9", name: qsTr("Save as PDF"),       id: "pdf" },
                         { glyph: "\u29c9", name: qsTr("Copy all text"),     id: "copy" },
+                        { glyph: "\u27a6", name: qsTr("Share the text"),    id: "share" },
                         { glyph: "\u21ba", name: qsTr("Read again"),        id: "again" }
                     ]
 
-                    // The table verb is separate because it is conditional: a page
-                    // with no table must not offer to export one, and a greyed-out
-                    // button that is usually greyed out is just clutter.
-                    property var tableVerb: ({ glyph: "\u25a6",
-                                               name: qsTr("Save the table as CSV"),
-                                               id: "csv" })
+                    // Only for a document that has a next page, for the same
+                    // reason the redaction button is conditional.
+                    property var nextPageVerb: ({ glyph: "\u21e5",
+                                                  name: qsTr("Read the next page"),
+                                                  id: "nextpage" })
 
-                    // Offered only when there is something to hide, for the same
-                    // reason as the table verb.
+                    // Offered only when there is something to hide: a page with no
+                    // account number must not offer to blank one, and a button
+                    // that is usually greyed out is just clutter.
                     property var hideVerb: ({ glyph: "\u2588",
                                               name: qsTr("Hide the private numbers"),
                                               id: "hide" })
@@ -649,8 +720,8 @@ Page {
                     // so the two cannot disagree about which button is where.
                     property var shown: {
                         var list = actions.verbs.slice()
-                        if (ocr.tables.length > 0) {
-                            list.push(actions.tableVerb)
+                        if (page.hasNextPage) {
+                            list.push(actions.nextPageVerb)
                         }
                         if (ocr.sensitiveCount > 0) {
                             list.push(actions.hideVerb)

@@ -79,31 +79,17 @@ target_include_directories(tst_historystore PRIVATE ${MOJI_SRC})
 target_link_libraries(tst_historystore Qt5::Core Qt5::Sql Qt5::Test)
 add_test(NAME historystore COMMAND tst_historystore)
 
-# Laying the recognised text invisibly over the photo. The geometry is the whole
-# test: a PDF that is slightly wrong here looks perfect - it is the photograph -
-# and only misbehaves when somebody searches it.
+# The photograph and its text, written out as one PDF. The fit is what is pinned:
+# an image scaled a little too large is cropped by the page, and a cropped PDF
+# looks entirely deliberate.
 add_executable(tst_pdfexport
     ${CMAKE_CURRENT_LIST_DIR}/tst_pdfexport.cpp
     ${MOJI_SRC}/pdfexport.cpp
-    ${MOJI_SRC}/ocrresult.cpp
     ${MOJI_SRC}/logging.cpp
 )
 target_include_directories(tst_pdfexport PRIVATE ${MOJI_SRC})
 target_link_libraries(tst_pdfexport Qt5::Core Qt5::Gui Qt5::Test)
 add_test(NAME pdfexport COMMAND tst_pdfexport)
-
-# Reading a table out of a block that never declared itself one: the column
-# boundaries are the vertical channels no word crosses. The interesting cases are
-# the refusals - a paragraph is not a table - and CSV escaping, where an
-# unescaped European price silently splits a column.
-add_executable(tst_tableextract
-    ${CMAKE_CURRENT_LIST_DIR}/tst_tableextract.cpp
-    ${MOJI_SRC}/tableextract.cpp
-    ${MOJI_SRC}/ocrresult.cpp
-)
-target_include_directories(tst_tableextract PRIVATE ${MOJI_SRC})
-target_link_libraries(tst_tableextract Qt5::Core Qt5::Gui Qt5::Test)
-add_test(NAME tableextract COMMAND tst_tableextract)
 
 # Mapping a field's offset in the joined text back to the words it came from,
 # which is what lets a black box land on the right part of the photo. The join
