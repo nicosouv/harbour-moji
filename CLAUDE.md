@@ -264,6 +264,26 @@ slogan — as a build rule:
   Tesseract's internal Otsu picks *one* threshold for the whole page and a shadow
   gradient defeats that); and a different engine entirely, which is a project
   rather than a change.
+- **Unsharp masking is not one of those levers either, and it was measured.**
+  Textractor (github.com/smatkovi/Textractor, MIT) sharpens before thresholding,
+  with `pixUnsharpMaskingGray`, and the reasoning is good: a hand-held photograph
+  is soft and a recogniser works on edges. On these five photographs it lost, at
+  every amount tried (0.5, 0.8, 1.2):
+
+  | photograph | none | at 0.8 |
+  |---|---|---|
+  | magazine page | 91.9% | 93.0% |
+  | dense spread | 85.6% | 82.6% |
+  | poster, at night | 70.4% | 68.9% |
+  | road sign, at night | 67.3% | 36.8% |
+  | sign behind a fence | 50.0% | 43.4% |
+
+  One marginal gain, four losses, one of them catastrophic - and the same
+  mechanism as thresholding a dark frame: it amplifies noise, the word count
+  climbs and the confidence collapses. `git log` has the implementation and its
+  tests. Untested variant if anyone revisits: a larger blur radius. This used a
+  3x3, which at the prepared 2400px size sharpens at the pixel scale, which is
+  where the noise is.
 - **`tessdata_best` is not one of those levers, on photographs.** This file used to
   claim it was "four times the size for a real accuracy gain". Measured through the
   pipeline as it stands, on the five photographs, `fra` best (4.0MB) against fast
